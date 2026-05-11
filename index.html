@@ -657,7 +657,7 @@
 
 <script>
 // DATA
-const supabase = supabase.createClient('https://xjkpjsbzkuxidbeyrmqb.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqa3Bqc2J6a3V4aWRiZXlybXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTAyMzcsImV4cCI6MjA5NDAyNjIzN30.LbGFArruQVU_n3aWmjXpC2Re4ilcV4FJXndd-E0v1xU');
+const db = supabase.createClient('https://xjkpjsbzkuxidbeyrmqb.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqa3Bqc2J6a3V4aWRiZXlybXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTAyMzcsImV4cCI6MjA5NDAyNjIzN30.LbGFArruQVU_n3aWmjXpC2Re4ilcV4FJXndd-E0v1xU');
 
 let currentUser = null;
 let garments = [];
@@ -679,10 +679,11 @@ async function doLogin() {
     user={name:'Mubarak Maneer Muhammad',role:'ceo',initials:'MM'};
   } else {
     // Check Supabase staff table
-    const { data, error } = await supabase.from('staff').select('*').eq('email', e).eq('password', p).single();
+    const { data, error } = await db.from('staff').select('*').eq('email', e).eq('password', p).single();
     if (data) {
       user={name:data.name, role:data.role.toLowerCase(), initials:initials(data.name)};
     } else {
+      if (error) console.error("Login Error:", error);
       err.style.display='block';
       return;
     }
@@ -731,17 +732,17 @@ async function initApp(){
 
 async function refreshData() {
   const [resG, resC, resO, resS] = await Promise.all([
-    supabase.from('garments').select('*'),
-    supabase.from('customers').select('*'),
-    supabase.from('orders').select('*'),
-    supabase.from('staff').select('*')
+    db.from('garments').select('*'),
+    db.from('customers').select('*'),
+    db.from('orders').select('*'),
+    db.from('staff').select('*')
   ]);
   garments = resG.data || [];
   customers = resC.data || [];
   orders = resO.data || [];
   staffList = resS.data || [];
   // For simplicity, tailors are staff members with 'Tailor' in their role
-  tailors = staffList.filter(s => s.role.toLowerCase().includes('tailor'));
+  tailors = staffList.filter(s => s.role && s.role.toLowerCase().includes('tailor'));
 }
 
 // NAV
@@ -843,7 +844,7 @@ async function addCustomer(){
   const name=document.getElementById('nc-name').value.trim();
   if(!name){toast('Enter a name');return;}
   
-  const { data, error } = await supabase.from('customers').insert([{
+  const { data, error } = await db.from('customers').insert([{
     name,
     phone: document.getElementById('nc-phone').value,
     email: document.getElementById('nc-email').value,
@@ -852,7 +853,7 @@ async function addCustomer(){
     measurements: []
   }]).select();
 
-  if (error) { toast('Error adding customer'); return; }
+  if (error) { console.error(error); toast('Error adding customer'); return; }
 
   await refreshData();
   renderCustomers();
@@ -966,7 +967,7 @@ async function saveBatchOrders() {
     const ids = sel.getAttribute('data-ids').split(',').map(id => parseInt(id));
     const newStatus = sel.value;
     ids.forEach(oid => {
-      updates.push(supabase.from('orders').update({ status: newStatus }).eq('id', oid));
+      updates.push(db.from('orders').update({ status: newStatus }).eq('id', oid));
     });
   });
   
@@ -1062,7 +1063,7 @@ async function addOrder(){
     return;
   }
   
-  const { error } = await supabase.from('orders').insert(ordersToInsert);
+  const { error } = await db.from('orders').insert(ordersToInsert);
   if (error) { toast('Error saving order'); return; }
 
   await refreshData();
@@ -1104,7 +1105,7 @@ async function addTailor(){
   const name=document.getElementById('nt-name').value.trim();
   const email=prompt("Enter tailor's email:");
   if(!name || !email) return;
-  const { error } = await supabase.from('staff').insert([{ name, email, role: 'Tailor', password: '123' }]);
+  const { error } = await db.from('staff').insert([{ name, email, role: 'Tailor', password: '123' }]);
   if (error) { toast('Error adding tailor'); return; }
   await refreshData();
   renderTailors(); renderStaffList();
@@ -1112,7 +1113,7 @@ async function addTailor(){
   toast(name+' added');
 }
 async function removeTailor(id){
-  const { error } = await supabase.from('staff').delete().eq('id', id);
+  const { error } = await db.from('staff').delete().eq('id', id);
   if (error) { toast('Error removing tailor'); return; }
   await refreshData();
   renderTailors(); renderStaffList();
@@ -1490,7 +1491,7 @@ function renderPriceMgr(){
 }
 async function saveGarmentPrice(id){
   const newPrice = parseInt(document.getElementById('gp-'+id).value);
-  const { error } = await supabase.from('garments').update({ price: newPrice }).eq('id', id);
+  const { error } = await db.from('garments').update({ price: newPrice }).eq('id', id);
   if (error) { toast('Error updating price'); return; }
   await refreshData();
   toast('Price updated successfully');
@@ -1499,7 +1500,7 @@ async function addGarment(){
   const name=document.getElementById('ng-name').value.trim();
   const price=parseInt(document.getElementById('ng-price').value);
   if(!name||!price){toast('Enter name and price');return;}
-  const { error } = await supabase.from('garments').insert([{ name, price }]);
+  const { error } = await db.from('garments').insert([{ name, price }]);
   if (error) { toast('Error adding item'); return; }
   await refreshData();
   renderPriceMgr(); populateOrderForm();
@@ -1507,7 +1508,7 @@ async function addGarment(){
   document.getElementById('ng-name').value=''; document.getElementById('ng-price').value='';
 }
 async function delGarment(id){
-  const { error } = await supabase.from('garments').delete().eq('id', id);
+  const { error } = await db.from('garments').delete().eq('id', id);
   if (error) { toast('Error removing item'); return; }
   await refreshData();
   renderPriceMgr(); toast('Garment removed');
@@ -1525,7 +1526,7 @@ function renderStaffList(){
 async function promptPass(type, id) {
   const newPass = prompt("Enter new password:");
   if (newPass === null) return;
-  const { error } = await supabase.from('staff').update({ password: newPass }).eq('id', id);
+  const { error } = await db.from('staff').update({ password: newPass }).eq('id', id);
   if (error) { toast('Error updating password'); return; }
   await refreshData();
   toast('Password updated successfully');
@@ -1535,7 +1536,7 @@ async function addStaff(){
   const email=document.getElementById('ns-email').value.trim();
   const role=document.getElementById('ns-role').value;
   if(!name || !email) return;
-  const { error } = await supabase.from('staff').insert([{ name, email, role, password: '123' }]);
+  const { error } = await db.from('staff').insert([{ name, email, role, password: '123' }]);
   if (error) { toast('Error adding staff'); return; }
   await refreshData();
   renderStaffList(); renderTailors();
@@ -1544,7 +1545,7 @@ async function addStaff(){
   ['ns-name','ns-email'].forEach(id=>document.getElementById(id).value='');
 }
 async function removeStaff(id){
-  const { error } = await supabase.from('staff').delete().eq('id', id);
+  const { error } = await db.from('staff').delete().eq('id', id);
   if (error) { toast('Error removing staff'); return; }
   await refreshData();
   renderStaffList(); renderTailors();
