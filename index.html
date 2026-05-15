@@ -1843,7 +1843,7 @@
           </select></div>
         <div class="form-group"><label>Fabric Notes</label><input id="no-fabric"
             placeholder="e.g. Blue Atampa, 5 yards"></div>
-        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addOrder()">Create Order</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addOrder(this)">Create Order</button>
       </div>
     </div>
   </div>
@@ -2012,7 +2012,7 @@
     }
     function loginUser(user) {
       currentUser = user;
-      localStorage.setItem('txUser', JSON.stringify(user));
+      sessionStorage.setItem('txUser', JSON.stringify(user));
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app').style.display = 'flex';
       document.getElementById('user-name').textContent = currentUser.name;
@@ -2025,7 +2025,7 @@
     }
     function doLogout() {
       currentUser = null;
-      localStorage.removeItem('txUser');
+      sessionStorage.removeItem('txUser');
       localStorage.removeItem('txTab');
       document.getElementById('app').style.display = 'none';
       document.getElementById('login-screen').style.display = 'flex';
@@ -2088,6 +2088,8 @@
 
       document.getElementById('tab-title').textContent = tabNames[name] || (name.charAt(0).toUpperCase() + name.slice(1));
       localStorage.setItem('txTab', name);
+
+      if (name === 'tailors') renderTailors();
 
       if (window.innerWidth <= 850) {
         closeSidebar();
@@ -2681,9 +2683,10 @@
       </div>
     </div>`).join('');
     }
-    async function addOrder() {
+    async function addOrder(btn) {
+      if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
       const cid = parseInt(document.getElementById('no-cust').value);
-      if (!cid) { toast('Select a customer'); return; }
+      if (!cid) { toast('Select a customer'); if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; } return; }
       const c = customers.find(x => x.id === cid);
       const received = document.getElementById('no-received').value || new Date().toISOString().split('T')[0];
       const due = document.getElementById('no-due').value;
@@ -2725,16 +2728,18 @@
 
       if (ordersToInsert.length === 0) {
         toast('Select at least one item from the catalogue');
+        if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; }
         return;
       }
 
       const { error } = await db.from('orders').insert(ordersToInsert);
-      if (error) { toast('Error saving order'); return; }
+      if (error) { toast('Error saving order'); if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; } return; }
 
       await refreshData();
       renderOrders(); renderDashOrders(); renderDashStats(); renderInsights(); renderTailors();
       closeModal('add-order-modal');
       toast(`${ordersToInsert.length} items added for ${c.name}`);
+      if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; }
     }
 
     // TAILORS
@@ -3068,7 +3073,16 @@
       doc.text(cn, 20, 61);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
       doc.text('Phone: ' + cphone, 20, 68);
-      doc.text('Date: ' + new Date().toLocaleDateString('en-GB'), 130, 52);
+      
+      let recvDate = '—';
+      const firstOrder = selectedItems.find(i => i.type === 'order');
+      if (firstOrder) {
+        const o = orders.find(x => x.id === firstOrder.id);
+        if (o && o.received_at) recvDate = new Date(o.received_at).toLocaleDateString('en-GB');
+      }
+
+      doc.text('Issue Date: ' + new Date().toLocaleDateString('en-GB'), 130, 52);
+      doc.text('Receive Date: ' + recvDate, 130, 60);
       doc.setDrawColor(232, 213, 183); doc.line(20, 75, 190, 75);
 
       doc.setFontSize(10); doc.setFont('helvetica', 'bold');
@@ -3240,7 +3254,7 @@
       </div>
       <span style="font-family:'El Messiri',serif;font-size:19px;color:var(--danger);font-weight:600;">₦${d.unpaid.toLocaleString()}</span>
     </div>`).join('') || '<p style="font-size:12px;color:var(--text-muted);text-align:center;">No outstanding balances!</p>';
-
+      const topCust = Object.values(custStats).sort((a, b) => b.total - a.total).slice(0, 5);
       document.getElementById('ins-top-cust').innerHTML = topCust.map((c, i) => `
     <li>
       <span class="rank-num">${i + 1}</span>
@@ -3502,7 +3516,7 @@
     });
 
     // SESSION RESTORE
-    const savedUser = localStorage.getItem('txUser');
+    const savedUser = sessionStorage.getItem('txUser');
     if (savedUser) {
       loginUser(JSON.parse(savedUser));
     }
