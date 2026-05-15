@@ -1341,6 +1341,111 @@
       border-radius: 6px;
       display: inline-block;
     }
+
+    /* LOGIN SCREEN UI */
+    #login-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--p1) 0%, var(--p2) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .login-box {
+      background: var(--bg-card);
+      width: 100%;
+      max-width: 420px;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .login-logo h1 {
+      font-family: 'El Messiri', serif;
+      font-size: 32px;
+      color: var(--text-main);
+      letter-spacing: 5px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .login-divider {
+      height: 2px;
+      width: 50px;
+      background: var(--accent);
+      margin: 0 auto;
+      border-radius: 2px;
+    }
+
+    #login-screen label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: -5px;
+    }
+
+    #login-screen input {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-app);
+      color: var(--text-main);
+      font-family: 'El Messiri', sans-serif;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    #login-screen input:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(112, 80, 44, 0.1);
+    }
+
+    .login-error {
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+      text-align: center;
+    }
+
+    .login-btn {
+      margin-top: 10px;
+      padding: 16px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--n2), #8B6538);
+      color: #FFFFFF;
+      font-family: 'El Messiri', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: var(--shadow-btn);
+    }
+
+    .login-btn:hover {
+      background: linear-gradient(135deg, #8B6538, var(--p1));
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(112, 80, 44, 0.4);
+    }
   </style>
 </head>
 
