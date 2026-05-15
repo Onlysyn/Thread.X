@@ -1467,13 +1467,67 @@
       z-index: 10000;
       transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
+
     #toast svg {
       width: 18px;
       height: 18px;
       color: var(--success);
     }
+
     #toast.show {
       bottom: 30px;
+    }
+
+    /* MOBILE RESPONSIVE UTILS */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    
+    .table-container table {
+      min-width: 800px;
+      margin-bottom: 0;
+    }
+
+    .responsive-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .responsive-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .section-head h2 {
+        font-size: 24px;
+      }
+
+      .modal {
+        width: 100%;
+        max-height: 95vh;
+      }
+
+      .modal-body {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .responsive-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -1641,7 +1695,8 @@
             <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
               <h3 style="margin:0;">Recent Orders</h3>
               <div style="display:flex;gap:10px;align-items:center;">
-                <select id="dash-period" onchange="renderDashOrders()" style="padding:4px 8px;font-size:11px;border-radius:6px;background:var(--bg-app);border:1px solid var(--border);color:var(--text-main);font-family:'El Messiri';">
+                <select id="dash-period" onchange="renderDashOrders()"
+                  style="padding:4px 8px;font-size:11px;border-radius:6px;background:var(--bg-app);border:1px solid var(--border);color:var(--text-main);font-family:'El Messiri';">
                   <option value="month">This Month</option>
                   <option value="week">This Week</option>
                   <option value="year">This Year</option>
@@ -1650,7 +1705,9 @@
                 <button class="btn btn-primary btn-sm" onclick="showTabByName('orders')">View All</button>
               </div>
             </div>
-            <table id="dash-orders"></table>
+            <div class="table-container">
+              <table id="dash-orders"></table>
+            </div>
           </div>
         </div>
 
@@ -1693,7 +1750,9 @@
             </select>
           </div>
           <div class="card">
-            <table id="orders-table"></table>
+            <div class="table-container">
+              <table id="orders-table"></table>
+            </div>
           </div>
         </div>
 
@@ -1770,8 +1829,7 @@
                   <div id="inv-cname"
                     style="font-family:'El Messiri',serif;font-size:20px;color:var(--brown-deep);font-weight:600;">—
                   </div>
-                  <div id="inv-cphone"
-                    style="font-size:12px;color:var(--text-muted);margin-top:2px;">—
+                  <div id="inv-cphone" style="font-size:12px;color:var(--text-muted);margin-top:2px;">—
                   </div>
                 </div>
                 <div style="text-align:right;">
@@ -1923,7 +1981,8 @@
           <div class="form-group"><label>Phone</label><input id="nc-phone" placeholder="+234 ..."></div>
         </div>
         <div class="form-group"><label>Email</label><input id="nc-email" placeholder="email@example.com"></div>
-        <div class="form-group"><label>Address</label><input id="nc-address" placeholder="123 Atelier Street, Birnin Kebbi"></div>
+        <div class="form-group"><label>Address</label><input id="nc-address"
+            placeholder="123 Atelier Street, Birnin Kebbi"></div>
         <div class="form-group"><label>Tag</label><select id="nc-tag">
             <option>Regular</option>
             <option>VIP</option>
@@ -1974,7 +2033,8 @@
           </select></div>
         <div class="form-group"><label>Fabric Notes</label><input id="no-fabric"
             placeholder="e.g. Blue Atampa, 5 yards"></div>
-        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addOrder(this)">Create Order</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addOrder(this)">Create
+          Order</button>
       </div>
     </div>
   </div>
@@ -2012,7 +2072,7 @@
           <h4
             style="margin-bottom:12px;color:var(--accent);text-transform:uppercase;font-size:12px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:4px;">
             Top / Riga / Kaftan</h4>
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;">
+          <div class="responsive-grid">
             <div class="form-group"><label>Shoulder</label><input type="number" id="um-shoulder"></div>
             <div class="form-group"><label>Neck</label><input type="number" id="um-neck"></div>
             <div class="form-group"><label>Sleeve Length</label><input type="number" id="um-sleeve_length"></div>
@@ -2039,7 +2099,7 @@
           <h4
             style="margin-bottom:12px;color:var(--accent);text-transform:uppercase;font-size:12px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:4px;">
             Trousers / Wando</h4>
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;">
+          <div class="responsive-grid">
             <div class="form-group"><label>Trouser Length</label><input type="number" id="um-trouser_length"></div>
             <div class="form-group"><label>Waist to Knee</label><input type="number" id="um-waist_to_knee"></div>
             <div class="form-group"><label>Laps (Thigh)</label><input type="number" id="um-laps"></div>
@@ -2287,11 +2347,11 @@
       const period = document.getElementById('dash-period') ? document.getElementById('dash-period').value : 'month';
       const now = new Date();
       let startTime = 0;
-      
+
       if (period === 'week') {
         const sun = new Date(now);
         sun.setDate(now.getDate() - now.getDay());
-        sun.setHours(0,0,0,0);
+        sun.setHours(0, 0, 0, 0);
         startTime = sun.getTime();
       } else if (period === 'month') {
         startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -2306,7 +2366,7 @@
         // We'll use due date as a proxy for recency if created_at isn't consistent.
         const oDate = new Date(o.due).getTime();
         return oDate >= startTime;
-      }).sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0, 10);
+      }).sort((a, b) => new Date(b.due) - new Date(a.due)).slice(0, 10);
 
       const table = document.getElementById('dash-orders');
       if (filtered.length === 0) {
@@ -2314,7 +2374,7 @@
         return;
       }
 
-    table.innerHTML = `
+      table.innerHTML = `
     <thead><tr><th>Customer</th><th>Garment</th><th>Tailor</th><th>Status</th><th>Recv Date</th><th>Due Date</th><th>Payment</th></tr></thead>
     <tbody>${filtered.map(o => `<tr>
       <td style="font-weight:500;">${o.customer}</td><td>${o.garment}</td>
@@ -2366,13 +2426,13 @@
       </div>
     </div>`).join('');
     }
-    function filterCustomers(q) { 
+    function filterCustomers(q) {
       const query = q.toLowerCase();
-      renderCustomers(customers.filter(c => 
-        c.name.toLowerCase().includes(query) || 
-        c.phone.includes(query) || 
+      renderCustomers(customers.filter(c =>
+        c.name.toLowerCase().includes(query) ||
+        c.phone.includes(query) ||
         (c.address && c.address.toLowerCase().includes(query))
-      )); 
+      ));
     }
 
     function openProfile(id) {
@@ -2488,7 +2548,7 @@
       const period = document.getElementById('prof-period').value;
       const now = new Date();
       let startTime = 0;
-      
+
       if (period === 'week') startTime = now.getTime() - (7 * 24 * 60 * 60 * 1000);
       else if (period === 'month') startTime = now.getTime() - (30 * 24 * 60 * 60 * 1000);
       else if (period === 'year') startTime = now.getTime() - (365 * 24 * 60 * 60 * 1000);
@@ -2499,7 +2559,7 @@
         // Use created_at if available, fallback to due date if not
         const oDate = new Date(o.created_at || o.due).getTime();
         return oDate >= startTime;
-      }).sort((a,b) => new Date(b.due) - new Date(a.due));
+      }).sort((a, b) => new Date(b.due) - new Date(a.due));
 
       const list = document.getElementById('prof-history-list');
       if (filtered.length === 0) {
@@ -3223,7 +3283,7 @@
       doc.text(cn, 20, 61);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
       doc.text('Phone: ' + cphone, 20, 68);
-      
+
       let recvDate = '—';
       const firstOrder = selectedItems.find(i => i.type === 'order');
       if (firstOrder) {
