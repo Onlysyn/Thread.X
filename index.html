@@ -2094,23 +2094,17 @@
       const e = document.getElementById('login-email').value.trim();
       const p = document.getElementById('login-password').value.trim();
       const err = document.getElementById('login-error');
-      let user = null;
 
-      if (e === 'ceo@threadx.com' && p === 'admin123') {
-        user = { name: 'Mubarak Maneer Muhammad', role: 'ceo', initials: 'MM' };
+      // Check Supabase staff table
+      const { data, error } = await db.from('staff').select('*').eq('email', e).eq('password', p).single();
+      if (data) {
+        err.style.display = 'none';
+        const userRole = data.role.toLowerCase() === 'ceo' ? 'ceo' : data.role.toLowerCase();
+        loginUser({ name: data.name, role: userRole, initials: initials(data.name) });
       } else {
-        // Check Supabase staff table
-        const { data, error } = await db.from('staff').select('*').eq('email', e).eq('password', p).single();
-        if (data) {
-          user = { name: data.name, role: data.role.toLowerCase(), initials: initials(data.name) };
-        } else {
-          if (error) console.error("Login Error:", error);
-          err.style.display = 'block';
-          return;
-        }
+        if (error) console.error("Login Error:", error);
+        err.style.display = 'block';
       }
-      err.style.display = 'none';
-      loginUser(user);
     }
     function loginUser(user) {
       currentUser = user;
@@ -2120,7 +2114,11 @@
       document.getElementById('user-name').textContent = currentUser.name;
       document.getElementById('user-role-label').textContent = currentUser.role.toUpperCase();
       document.getElementById('user-avatar').textContent = currentUser.initials;
-      if (currentUser.role !== 'ceo') document.querySelectorAll('.ceo-only').forEach(el => el.style.display = 'none');
+      if (currentUser.role !== 'ceo') {
+        document.querySelectorAll('.ceo-only').forEach(el => el.style.display = 'none');
+      } else {
+        document.querySelectorAll('.ceo-only').forEach(el => el.style.display = 'flex');
+      }
       initApp();
       const savedTab = localStorage.getItem('txTab') || 'dashboard';
       showTabByName(savedTab);
@@ -3583,6 +3581,8 @@
       ['ns-name', 'ns-email'].forEach(id => document.getElementById(id).value = '');
     }
     async function removeStaff(id) {
+      const s = staffList.find(x => x.id === id);
+      if (s && s.role.toLowerCase() === 'ceo') { toast('Cannot remove CEO account'); return; }
       const { error } = await db.from('staff').delete().eq('id', id);
       if (error) { toast('Error removing staff'); return; }
       await refreshData();
