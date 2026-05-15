@@ -3554,7 +3554,7 @@
         <span class="s-role-tag">${s.role}</span>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-secondary btn-sm" title="Change Password" onclick="promptPass('staff', ${s.id})">🔑 Pass</button>
-          <button class="btn btn-danger btn-sm" title="Remove Staff" onclick="removeStaff(${s.id})">🗑️</button>
+          ${s.role.toLowerCase() === 'ceo' ? '' : `<button class="btn btn-danger btn-sm" title="Remove Staff" onclick="removeStaff(${s.id})">🗑️</button>`}
         </div>
       </div>
     </div>`).join('');
