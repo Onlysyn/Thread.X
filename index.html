@@ -1446,6 +1446,35 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(112, 80, 44, 0.4);
     }
+
+    /* TOAST NOTIFICATION */
+    #toast {
+      position: fixed;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      color: var(--text-main);
+      padding: 12px 24px;
+      border-radius: 100px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 10000;
+      transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    #toast svg {
+      width: 18px;
+      height: 18px;
+      color: var(--success);
+    }
+    #toast.show {
+      bottom: 30px;
+    }
   </style>
 </head>
 
@@ -2094,16 +2123,28 @@
       const e = document.getElementById('login-email').value.trim();
       const p = document.getElementById('login-password').value.trim();
       const err = document.getElementById('login-error');
+      const btn = document.querySelector('.login-btn');
+
+      if (!e || !p) {
+        err.style.display = 'block';
+        err.textContent = 'Please enter both email and password.';
+        return;
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Signing In...'; }
+      err.style.display = 'none';
 
       // Check Supabase staff table
       const { data, error } = await db.from('staff').select('*').eq('email', e).eq('password', p).single();
       if (data) {
-        err.style.display = 'none';
         const userRole = data.role.toLowerCase() === 'ceo' ? 'ceo' : data.role.toLowerCase();
         loginUser({ name: data.name, role: userRole, initials: initials(data.name) });
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
       } else {
         if (error) console.error("Login Error:", error);
         err.style.display = 'block';
+        err.textContent = 'Invalid credentials. Please try again.';
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
       }
     }
     function loginUser(user) {
