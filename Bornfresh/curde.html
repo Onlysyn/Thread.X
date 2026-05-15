@@ -1,0 +1,3513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thread X — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      /* Brand Palette */
+      --p1: #322b14;
+      /* Deep Obsidian */
+      --p2: #46402B;
+      /* Rich Earth */
+      --p3: #59564F;
+      /* Soft Stone */
+      --p4: #98958D;
+      /* Muted Gold */
+      --n1: #FFFBF8;
+      /* Ivory Silk */
+      --n2: #70502C;
+      /* Burnished Copper */
+      --n3: #EADCCD;
+      /* Soft Sand */
+      --n4: #5D554D;
+      /* Deep Shadow */
+
+      /* Semantic - Light Mode */
+      --bg-app: var(--n1);
+      --bg-sidebar: var(--p1);
+      --bg-card: #FFFFFF;
+      --bg-modal: var(--n1);
+      --bg-topbar: rgba(255, 251, 248, 0.9);
+
+      --text-main: var(--p1);
+      --text-sub: var(--n4);
+      --text-dim: var(--p4);
+      --text-on-dark: var(--n1);
+
+      --accent: var(--n2);
+      --accent-soft: var(--n3);
+      --border: rgba(50, 43, 20, 0.08);
+
+      --sidebar-text: var(--n1);
+      --nav-active: var(--n2);
+
+      --shadow-soft: 0 8px 24px rgba(50, 43, 20, 0.04);
+      --shadow-btn: 0 4px 12px rgba(112, 80, 44, 0.2);
+      --radius: 10px;
+      --sidebar-w: 240px;
+
+      /* Status Colors */
+      --danger: #962D2D;
+      --success: #2D6A4F;
+      --warning: #B07D05;
+    }
+
+    [data-theme="dark"] {
+      --bg-app: #1A1608;
+      --bg-sidebar: #120F05;
+      --bg-card: #26200D;
+      --bg-modal: #26200D;
+      --bg-topbar: rgba(18, 22, 8, 0.9);
+
+      --text-main: #FFFBF8;
+      --text-sub: #EADCCD;
+      --text-dim: #98958D;
+      --text-on-dark: var(--n1);
+
+      --accent: #EADCCD;
+      --accent-soft: rgba(234, 220, 205, 0.1);
+      --border: rgba(255, 255, 255, 0.08);
+
+      --sidebar-text: #FFFBF8;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'El Messiri', sans-serif;
+      background: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1.6;
+    }
+
+    /* UI COMPONENTS */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 10px 0 40px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s;
+    }
+
+    .sidebar-brand {
+      padding: 40px 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sidebar-brand h1 {
+      font-family: 'El Messiri', serif;
+      font-size: 22px;
+      color: var(--sidebar-text);
+      letter-spacing: 3px;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar-brand p {
+      font-size: 8px;
+      color: var(--n2);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 10px 8px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      color: var(--sidebar-text);
+      opacity: 0.5;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-radius: 8px;
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .nav-item:hover {
+      opacity: 0.9;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .nav-item.active {
+      opacity: 1;
+      color: #FFFFFF;
+      background: linear-gradient(90deg, var(--n2), #8B6538);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--n2), var(--n4));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #FFFFFF;
+      font-size: 13px;
+    }
+
+    .user-info p {
+      color: var(--sidebar-text);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-info span {
+      color: var(--p4);
+      font-size: 9px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: var(--sidebar-text);
+      font-family: 'El Messiri';
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger);
+      color: #FFFFFF;
+      border-color: var(--danger);
+    }
+
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      transition: all 0.3s;
+    }
+
+    .topbar {
+      background: var(--bg-topbar);
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar h2 {
+      font-family: 'El Messiri', serif;
+      font-size: 20px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .badge-role {
+      background: var(--accent-soft);
+      color: var(--p1);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 1px solid var(--border);
+    }
+
+    [data-theme="dark"] .badge-role {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-main);
+      align-items: center;
+    }
+
+    .hamburger svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .content {
+      padding: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .section-head h2 {
+      font-family: 'El Messiri', serif;
+      font-size: 32px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .search-input {
+      width: 100%;
+      max-width: 500px;
+      padding: 16px 24px;
+      padding-left: 52px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2398958D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") no-repeat 20px center;
+      color: var(--text-main);
+      font-family: 'El Messiri';
+      font-size: 16px;
+      margin-bottom: 32px;
+      transition: all 0.3s;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(112, 80, 44, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* CARDS & STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--n2);
+    }
+
+    .stat-card .label {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .stat-card .value {
+      font-family: 'El Messiri', serif;
+      font-size: 28px;
+      color: var(--text-main);
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .stat-card .sub {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .stat-card.dark {
+      background: var(--p1);
+      color: var(--n1);
+      border-color: var(--p1);
+    }
+
+    .stat-card.dark .label {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .stat-card.dark .value {
+      color: var(--n1);
+    }
+
+    .stat-card.dark .sub {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h3 {
+      font-family: 'El Messiri', serif;
+      font-size: 18px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    /* CUSTOMER & TAILOR GRIDS */
+    .customer-grid,
+    .tailor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .customer-card,
+    .tailor-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .customer-card:hover,
+    .tailor-card:hover {
+      border-color: var(--n2);
+      box-shadow: 0 10px 30px rgba(50, 43, 20, 0.08);
+      transform: scale(1.01);
+    }
+
+    .c-avatar,
+    .t-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--p1), var(--p2));
+      color: var(--n1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .c-name,
+    .t-name {
+      font-family: 'El Messiri', serif;
+      font-size: 18px;
+      color: var(--text-main);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .c-phone,
+    .rc-info {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    .measure-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .m-item {
+      background: rgba(var(--p1), 0.02);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 4px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .m-item:hover {
+      border-color: var(--accent);
+      background: white;
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .m-item:hover {
+      background: var(--bg-card);
+    }
+
+    .m-label {
+      font-size: 8px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .m-val {
+      font-size: 14px;
+      color: var(--text-main);
+      font-weight: 700;
+      font-family: 'El Messiri', serif;
+    }
+
+    .m-unit {
+      font-size: 7px;
+      color: var(--text-dim);
+      margin-left: 1px;
+    }
+
+    /* TABS */
+    .p-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-app);
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .p-tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .p-tab.active {
+      background: var(--p1);
+      color: #fff;
+    }
+
+    .p-tab-content {
+      display: none;
+    }
+
+    .p-tab-content.active {
+      display: block;
+    }
+
+    .chart-card h3 {
+      font-family: 'El Messiri', serif;
+      font-size: 17px;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .rank-num {
+      font-family: 'El Messiri', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      width: 24px;
+    }
+
+    .m-val {
+      font-family: 'El Messiri', serif;
+      font-size: 17px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: rgba(var(--p1), 0.02);
+      padding: 16px 32px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 18px 32px;
+      font-size: 15px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-sub);
+    }
+
+    tr:hover td {
+      background: rgba(112, 80, 44, 0.02);
+    }
+
+    /* BUTTONS */
+    .btn {
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-family: 'El Messiri';
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-btn);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--n2), #8B6538);
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #8B6538, var(--p1));
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(112, 80, 44, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-app);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: rgba(150, 45, 45, 0.08);
+      color: var(--danger);
+      border: 1px solid rgba(150, 45, 45, 0.15);
+      box-shadow: none;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(150, 45, 45, 0.2);
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 11px;
+      border-radius: 8px;
+    }
+
+    /* FORMS & MODALS */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 22, 8, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-modal);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 540px;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+
+    .modal-header {
+      padding: 20px 24px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .modal-header h2 {
+      font-family: 'El Messiri', serif;
+      font-size: 22px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: rgba(112, 80, 44, 0.05);
+      color: var(--danger);
+      border-color: var(--danger);
+      transform: rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 0 24px 24px;
+      overflow-y: auto;
+      flex: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .form-group label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 9px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-family: 'El Messiri';
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--n2);
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(112, 80, 44, 0.1);
+    }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-select {
+      padding: 10px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-family: 'El Messiri';
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    /* BADGES */
+    .badge {
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .badge-pending {
+      background: #FFF9E6;
+      color: #B07D05;
+    }
+
+    .badge-progress {
+      background: #E6F4FF;
+      color: #0050B3;
+    }
+
+    .badge-ready {
+      background: #F6FFED;
+      color: #389E0D;
+    }
+
+    .badge-done {
+      background: #F6FFED;
+      color: #389E0D;
+    }
+
+    .badge-delivered {
+      background: #F5F5F5;
+      color: #595959;
+    }
+
+    /* INVOICE */
+    .invoice-preview {
+      background: #FFFFFF;
+      border-radius: 24px;
+      padding: 50px;
+      color: #322b14;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--n3);
+    }
+
+    .inv-biz {
+      font-family: 'El Messiri', serif;
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      color: var(--p1);
+    }
+
+    .inv-tagline {
+      font-size: 12px;
+      letter-spacing: 4px;
+      color: var(--n2);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .inv-total-box {
+      background: var(--p1);
+      color: #FFFFFF;
+      padding: 30px;
+      border-radius: 20px;
+      margin-top: 40px;
+    }
+
+    .inv-total-box .ta {
+      font-family: 'El Messiri', serif;
+      font-size: 32px;
+      color: var(--n3);
+      font-weight: 700;
+    }
+
+    /* MOBILE OPTIMIZATION */
+    @media (max-width: 1100px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 850px) {
+      .sidebar {
+        transform: translateX(-100%);
+        width: 260px;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .topbar {
+        padding: 0 20px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .stats-grid {
+        gap: 15px;
+      }
+
+      .stat-card {
+        padding: 20px;
+      }
+
+      .stat-card .value {
+        font-size: 28px;
+      }
+
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 90;
+        backdrop-filter: blur(2px);
+      }
+
+      .sidebar-overlay.open {
+        display: block;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .customer-grid,
+      .tailor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar h2 {
+        font-size: 18px;
+      }
+
+      .modal {
+        border-radius: 20px;
+        width: 95%;
+      }
+
+      .modal-header,
+      .modal-body {
+        padding: 25px;
+      }
+
+      .modal-header h2 {
+        font-size: 24px;
+      }
+
+      .invoice-preview {
+        padding: 25px;
+      }
+
+      .inv-biz {
+        font-size: 26px;
+        letter-spacing: 4px;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* DARK MODE OVERRIDES */
+    [data-theme="dark"] body {
+      background: var(--bg-app);
+      color: var(--text-main);
+    }
+
+    [data-theme="dark"] .topbar {
+      background: var(--bg-topbar);
+    }
+
+    [data-theme="dark"] th {
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-dim);
+    }
+
+    [data-theme="dark"] td {
+      color: var(--text-sub);
+    }
+
+    [data-theme="dark"] tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    [data-theme="dark"] .search-input,
+    [data-theme="dark"] .form-group input,
+    [data-theme="dark"] .form-group select,
+    [data-theme="dark"] .form-group textarea {
+      background: #1A1608;
+      color: var(--text-main);
+    }
+
+    [data-theme="dark"] .btn-secondary {
+      color: var(--text-main);
+    }
+
+    [data-theme="dark"] .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    [data-theme="dark"] .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    [data-theme="dark"] .invoice-preview {
+      background: #FFFFFF;
+      color: #322b14;
+    }
+
+    [data-theme="dark"] .inv-total-box {
+      background: #322b14;
+      color: #FFFFFF;
+    }
+
+    [data-theme="dark"] .inv-divider {
+      border-color: rgba(50, 43, 20, 0.1);
+    }
+
+    [data-theme="dark"] .rush-date {
+      color: #322b14;
+    }
+
+    /* THEME TOGGLE */
+    .theme-toggle {
+      background: none;
+      border: none;
+      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+    }
+
+    .theme-toggle:hover {
+      color: var(--accent);
+      background: rgba(var(--p1), 0.05);
+    }
+
+    [data-theme="dark"] .theme-toggle {
+      color: var(--text-main);
+    }
+
+    /* HAMBURGER */
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: #3B1F0E;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    [data-theme="dark"] .hamburger span {
+      background: #e8d5b7;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 150;
+    }
+
+    .sidebar-overlay.open {
+      display: block;
+    }
+
+    /* MOBILE */
+    @media (max-width:700px) {
+      .hamburger {
+        display: flex;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        transition: transform 0.28s ease;
+        z-index: 200;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .topbar {
+        padding: 0 14px;
+      }
+
+      .topbar h2 {
+        font-size: 17px;
+      }
+
+      .content {
+        padding: 16px 14px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 14px 16px;
+      }
+
+      .stat-card .value {
+        font-size: 24px;
+      }
+
+      .customer-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .tailor-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .card {
+        overflow-x: auto;
+      }
+
+      table {
+        min-width: 500px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr !important;
+      }
+
+      .section-head {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .filters {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .modal {
+        border-radius: 12px 12px 0 0;
+      }
+
+      .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      #tab-invoice>div {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+
+      #tab-insights>div:last-child {
+        grid-template-columns: 1fr !important;
+      }
+
+      .theme-toggle {
+        top: 10px;
+        right: 12px;
+        padding: 5px 10px 5px 8px;
+        font-size: 11px;
+      }
+
+      .badge-role {
+        display: none;
+      }
+    }
+
+    .edit-stat-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-app);
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .edit-stat-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #fff;
+    }
+
+    .rev-edit-item {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+    }
+
+    .staff-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      transition: all 0.3s;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .staff-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--n2);
+      box-shadow: 0 12px 30px rgba(50, 43, 20, 0.08);
+    }
+
+    .s-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--p2), var(--p1));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .s-role-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-logo">
+        <h1>THREAD X</h1>
+        <div class="login-divider"></div>
+      </div>
+      <label>Email Address</label>
+      <input type="email" id="login-email" placeholder="you@threadx.com">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••">
+      <p class="login-error" id="login-error">Invalid credentials. Please try again.</p>
+      <button class="login-btn" onclick="doLogin()">Sign In</button>
+      <div class="login-hint">
+        CEO: ceo@threadx.com / admin123<br>
+        Staff: staff@threadx.com / staff123
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <h1>THREAD X</h1>
+        <p>Atelier System</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" onclick="showTab('dashboard',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          Dashboard
+        </div>
+        <div class="nav-item" onclick="showTab('customers',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="9" cy="7" r="4" />
+            <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87" />
+          </svg>
+          Customers
+        </div>
+        <div class="nav-item" onclick="showTab('orders',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+            <rect x="9" y="3" width="6" height="4" rx="1" />
+            <line x1="9" y1="12" x2="15" y2="12" />
+            <line x1="9" y1="16" x2="13" y2="16" />
+          </svg>
+          Orders
+        </div>
+        <div class="nav-item" onclick="showTab('tailors',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+          </svg>
+          Tailors
+        </div>
+        <div class="nav-item" onclick="showTab('invoice',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14,2 14,8 20,8" />
+            <line x1="8" y1="13" x2="16" y2="13" />
+            <line x1="8" y1="17" x2="16" y2="17" />
+            <line x1="8" y1="9" x2="10" y2="9" />
+          </svg>
+          Invoice
+        </div>
+        <div class="nav-item ceo-only" onclick="showTab('insights',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+          Insights
+        </div>
+        <div class="nav-item ceo-only" onclick="showTab('settings',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M12 2v2m0 16v2m-7.07-14.07 1.41 1.41M17.66 17.66l1.41 1.41M2 12h2m16 0h2M4.93 17.07l1.41-1.41M16.24 7.76l1.41-1.41" />
+          </svg>
+          Settings
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar" id="user-avatar">CE</div>
+          <div class="user-info">
+            <p id="user-name">CEO</p>
+            <span id="user-role-label">CEO</span>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:15px;">
+          <button class="hamburger" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h2 id="tab-title">Dashboard</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="badge-role">Workshop Manager</div>
+          <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
+            <div id="theme-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="2" x2="12" y2="4" />
+                <line x1="12" y1="20" x2="12" y2="22" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="2" y1="12" x2="4" y2="12" />
+                <line x1="20" y1="12" x2="22" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <div class="tab-panel active" id="tab-dashboard">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="label">Total Customers</div>
+              <div class="value" id="stat-total-cust">0</div>
+              <div class="sub">Total registered</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Active Orders</div>
+              <div class="value" id="stat-active-orders">0</div>
+              <div class="sub">Pending or in progress</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Orders Ready</div>
+              <div class="value" id="stat-ready-orders">0</div>
+              <div class="sub">Awaiting collection</div>
+            </div>
+            <div class="stat-card dark">
+              <div class="label">Total Revenue</div>
+              <div class="value" id="stat-total-rev">₦0</div>
+              <div class="sub">This month</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <h3 style="margin:0;">Recent Orders</h3>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <select id="dash-period" onchange="renderDashOrders()" style="padding:4px 8px;font-size:11px;border-radius:6px;background:var(--bg-app);border:1px solid var(--border);color:var(--text-main);font-family:'El Messiri';">
+                  <option value="month">This Month</option>
+                  <option value="week">This Week</option>
+                  <option value="year">This Year</option>
+                  <option value="all">All Time</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="showTabByName('orders')">View All</button>
+              </div>
+            </div>
+            <table id="dash-orders"></table>
+          </div>
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div class="tab-panel" id="tab-customers">
+          <div class="section-head">
+            <h2>Customers</h2>
+            <button class="btn btn-primary" onclick="openModal('add-customer-modal')">+ Add Customer</button>
+          </div>
+          <input class="search-input" id="customer-search" placeholder="Search by name..."
+            oninput="filterCustomers(this.value)">
+          <div class="customer-grid" id="customer-grid"></div>
+        </div>
+
+        <!-- ORDERS -->
+        <div class="tab-panel" id="tab-orders">
+          <div class="section-head">
+            <h2>Orders</h2>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="openNewOrderModal()">+ New Order</button>
+            </div>
+          </div>
+          <div class="filters">
+            <select class="filter-select" id="f-status" onchange="renderOrders()">
+              <option value="">All Statuses</option>
+              <option>Pending</option>
+              <option>In Progress</option>
+              <option>Ready</option>
+              <option>Done</option>
+              <option>Delivered</option>
+            </select>
+            <select class="filter-select" id="f-tailor" onchange="renderOrders()">
+              <option value="">All Tailors</option>
+            </select>
+            <select class="filter-select" id="f-pay" onchange="renderOrders()">
+              <option value="">All Payments</option>
+              <option>Paid</option>
+              <option>Part Payment</option>
+              <option>Unpaid</option>
+            </select>
+          </div>
+          <div class="card">
+            <table id="orders-table"></table>
+          </div>
+        </div>
+
+        <!-- TAILORS -->
+        <div class="tab-panel" id="tab-tailors">
+          <div class="section-head">
+            <h2>Tailors</h2>
+            <button class="btn btn-primary" onclick="openModal('add-tailor-modal')">+ Add Tailor</button>
+          </div>
+          <div class="tailor-grid" id="tailor-grid"></div>
+        </div>
+
+        <!-- INVOICE -->
+        <div class="tab-panel" id="tab-invoice">
+          <div class="section-head">
+            <h2>Generate Invoice</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:26px;">
+            <div>
+              <div class="form-group">
+                <label>Customer Name</label>
+                <input type="text" id="inv-cust-search" placeholder="Type name or select below..."
+                  oninput="suggestCustomers(this.value)" list="cust-suggestions"
+                  style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;margin-bottom:8px;">
+                <datalist id="cust-suggestions"></datalist>
+                <select id="inv-cust"
+                  onchange="loadCustOrders(); document.getElementById('inv-cust-search').value=this.options[this.selectedIndex].text;"
+                  style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+                  <option value="">— Choose customer —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Select Orders</label>
+                <div id="inv-orders-list"
+                  style="max-height:160px;overflow-y:auto;border:1px solid var(--tan);border-radius:8px;padding:10px;background:var(--white);display:flex;flex-direction:column;gap:6px;">
+                  <p style="font-size:12px;color:var(--text-muted);">Select a customer first</p>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Discount (%)</label><input type="number" id="inv-discount" value="0"
+                    min="0" max="100" oninput="updateInvoicePreview()"
+                    style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+                </div>
+                <div class="form-group"><label>Custom Adjustment (₦)</label><input type="number" id="inv-adj" value="0"
+                    oninput="updateInvoicePreview()"
+                    style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+                </div>
+              </div>
+              <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="inv-paid" value="0"
+                  oninput="updateInvoicePreview()"
+                  style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;">
+                <button class="btn btn-primary" onclick="recordPayment()">✅ Record Payment</button>
+                <button class="btn btn-secondary" onclick="dlPDF()">⬇ PDF</button>
+              </div>
+            </div>
+            <div class="invoice-preview" id="inv-preview">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;">
+                <div class="inv-logo-container">
+                  <img src="assets/logo.png" alt="Thread X Logo" style="height:80px;width:auto;"
+                    onerror="this.style.display='none'">
+                </div>
+                <div style="text-align:right;">
+                  <div class="inv-biz">THREAD X</div>
+                </div>
+              </div>
+              <hr class="inv-divider">
+              <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+                <div>
+                  <div
+                    style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">
+                    Bill To</div>
+                  <div id="inv-cname"
+                    style="font-family:'El Messiri',serif;font-size:20px;color:var(--brown-deep);font-weight:600;">—
+                  </div>
+                  <div id="inv-cphone"
+                    style="font-size:12px;color:var(--text-muted);margin-top:2px;">—
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div
+                    style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">
+                    Date</div>
+                  <div id="inv-date" style="font-size:13px;">—</div>
+                </div>
+              </div>
+              <hr class="inv-divider">
+              <div id="inv-items-container">
+                <div class="inv-row"><span style="color:var(--text-muted);">No items selected</span><span>—</span></div>
+              </div>
+              <div id="inv-discount-row" class="inv-row" style="display:none;color:var(--danger);font-weight:500;">
+                <span>Discount</span><span id="inv-discount-val">0</span>
+              </div>
+              <div id="inv-adj-row" class="inv-row" style="display:none;"><span>Adjustment</span><span
+                  id="inv-adj-val">0</span></div>
+              <div class="inv-total-box" style="margin-top:14px;">
+                <div>
+                  <div class="tl">Total Amount</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Thread X Atelier</div>
+                </div>
+                <div class="ta" id="inv-total">₦0</div>
+              </div>
+              <div id="inv-paid-row" class="inv-row"
+                style="display:none;border-top:1.5px solid var(--tan);margin-top:8px;padding-top:8px;">
+                <span>Paid <small id="inv-paid-perc"
+                    style="color:var(--success);font-weight:600;margin-left:4px;"></small></span>
+                <span id="inv-paid-val" style="color:var(--success);font-weight:600;">0</span>
+              </div>
+              <div id="inv-bal-row" class="inv-row" style="display:none;color:var(--danger);font-weight:600;">
+                <span>Outstanding Balance</span><span id="inv-bal-val">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSIGHTS -->
+        <div class="tab-panel" id="tab-insights">
+          <div class="section-head">
+            <h2>Business Insights</h2>
+          </div>
+          <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card" style="position:relative;">
+              <div class="label">Today</div>
+              <div class="value" id="ins-today">₦0</div>
+              <div class="sub">Revenue</div>
+              <button class="edit-stat-btn" onclick="openRevenueEditModal('today')"
+                title="Edit Today's Payments">✎</button>
+            </div>
+            <div class="stat-card" style="position:relative;">
+              <div class="label">This Week</div>
+              <div class="value" id="ins-week">₦0</div>
+              <button class="edit-stat-btn" onclick="openRevenueEditModal('week')"
+                title="Edit Week's Payments">✎</button>
+            </div>
+            <div class="stat-card dark" style="position:relative;">
+              <div class="label">This Month</div>
+              <div class="value" id="ins-month">₦0</div>
+              <button class="edit-stat-btn" onclick="openRevenueEditModal('month')" title="Edit Month's Payments"
+                style="background:rgba(255,255,255,0.1);color:#fff;">✎</button>
+            </div>
+            <div class="stat-card">
+              <div class="label">Outstanding</div>
+              <div class="value" id="ins-out-total" style="color:var(--danger);">₦0</div>
+              <div class="sub" id="ins-out-count">0 clients</div>
+            </div>
+          </div>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3>Most Ordered Catalogue Items</h3><canvas id="garment-chart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Orders by Month</h3><canvas id="month-chart"></canvas>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+            <div class="card">
+              <div class="card-header">
+                <h3>Top Customers</h3>
+              </div>
+              <div style="padding:14px 18px;">
+                <ul class="top-list" id="ins-top-cust">
+                  <!-- Dynamic -->
+                </ul>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3>Outstanding Balances</h3>
+              </div>
+              <div style="padding:14px 18px;" id="ins-out-list">
+                <!-- Dynamic -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="tab-panel" id="tab-settings">
+          <div class="section-head">
+            <h2>Settings</h2>
+          </div>
+          <div class="settings-section">
+            <h3>Catalogue Prices</h3>
+            <div id="price-manager"></div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+              <input id="ng-name" placeholder="Item name"
+                style="padding:9px 12px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:13px;width:180px;">
+              <input id="ng-price" type="number" placeholder="Price (₦)"
+                style="padding:9px 12px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:13px;width:130px;">
+              <button class="btn btn-primary" onclick="addGarment()">+ Add to Catalogue</button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3>Staff Accounts</h3>
+            <div class="staff-grid" id="staff-list"
+              style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:16px;margin-top:15px;">
+            </div>
+            <button class="btn btn-primary" style="margin-top:24px;" onclick="openModal('add-staff-modal')">+ Add
+              Staff Member</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-overlay" id="customer-profile-modal">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-header">
+        <h2 id="prof-name">Profile</h2><button class="modal-close"
+          onclick="closeModal('customer-profile-modal')">×</button>
+      </div>
+      <div class="modal-body" id="prof-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="add-customer-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Add New Customer</h2><button class="modal-close" onclick="closeModal('add-customer-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label>Full Name</label><input id="nc-name" placeholder="Musa Abdullahi"></div>
+          <div class="form-group"><label>Phone</label><input id="nc-phone" placeholder="+234 ..."></div>
+        </div>
+        <div class="form-group"><label>Email</label><input id="nc-email" placeholder="email@example.com"></div>
+        <div class="form-group"><label>Address</label><input id="nc-address" placeholder="123 Atelier Street, Birnin Kebbi"></div>
+        <div class="form-group"><label>Tag</label><select id="nc-tag">
+            <option>Regular</option>
+            <option>VIP</option>
+          </select></div>
+        <div class="form-group"><label>Notes</label><textarea id="nc-notes" rows="3" style="resize:none;"></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addCustomer()">Add Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="add-order-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>New Order</h2><button class="modal-close" onclick="closeModal('add-order-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="position:relative;">
+          <label>Customer</label>
+          <input type="text" id="no-cust-input" placeholder="Type customer name..." autocomplete="off"
+            style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'El Messiri';font-size:14px;background:var(--bg-card);color:var(--text-main);"
+            oninput="filterOrderCustomers(this.value)" onblur="setTimeout(()=>hideOrderSuggest(),180)"
+            onfocus="filterOrderCustomers(this.value)">
+          <input type="hidden" id="no-cust">
+          <div id="no-cust-dropdown"
+            style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(50,43,20,0.12);z-index:200;max-height:200px;overflow-y:auto;margin-top:2px;">
+          </div>
+        </div>
+        <div class="form-group"><label>Items to Order</label>
+          <div id="no-catalogue-list"
+            style="max-height:220px;overflow-y:auto;border:1px solid var(--tan);border-radius:8px;padding:10px;background:var(--white);display:flex;flex-direction:column;gap:12px;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Receive Date</label><input type="date" id="no-received"
+              style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+          </div>
+          <div class="form-group"><label>Due Date</label><input type="date" id="no-due"
+              style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+          </div>
+        </div>
+        <div class="form-group"><label>Payment Status</label><select id="no-pay"
+            style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+            <option>Unpaid</option>
+            <option>Part Payment</option>
+            <option>Paid</option>
+          </select></div>
+        <div class="form-group"><label>Fabric Notes</label><input id="no-fabric"
+            placeholder="e.g. Blue Atampa, 5 yards"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addOrder()">Create Order</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="order-detail-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Order Details</h2><button class="modal-close" onclick="closeModal('order-detail-modal')">×</button>
+      </div>
+      <div class="modal-body" id="order-detail-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="add-tailor-modal">
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <h2>Add Tailor</h2><button class="modal-close" onclick="closeModal('add-tailor-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label>Full Name</label><input id="nt-name" placeholder="Tailor name"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addTailor()">Add Tailor</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="update-measure-modal">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-header">
+        <h2>Update Measurements</h2><button class="modal-close" onclick="closeModal('update-measure-modal')">×</button>
+      </div>
+      <div class="modal-body" style="max-height:80vh;overflow-y:auto;">
+        <input type="hidden" id="um-cid">
+
+        <div style="margin-bottom:24px;">
+          <h4
+            style="margin-bottom:12px;color:var(--accent);text-transform:uppercase;font-size:12px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:4px;">
+            Top / Riga / Kaftan</h4>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;">
+            <div class="form-group"><label>Shoulder</label><input type="number" id="um-shoulder"></div>
+            <div class="form-group"><label>Neck</label><input type="number" id="um-neck"></div>
+            <div class="form-group"><label>Sleeve Length</label><input type="number" id="um-sleeve_length"></div>
+            <div class="form-group"><label>3/4 Sleeve Length</label><input type="number" id="um-sleeve_3qtr_length">
+            </div>
+            <div class="form-group"><label>3/4 Sleeve Width</label><input type="number" id="um-sleeve_3qtr_width"></div>
+            <div class="form-group"><label>Chest</label><input type="number" id="um-chest"></div>
+            <div class="form-group"><label>Lower Chest</label><input type="number" id="um-lower_chest"></div>
+            <div class="form-group"><label>Kaftan Waist</label><input type="number" id="um-kaftan_waist"></div>
+            <div class="form-group"><label>Bicep</label><input type="number" id="um-bicep"></div>
+            <div class="form-group"><label>Cufflinks</label><input type="number" id="um-cufflinks"></div>
+            <div class="form-group"><label>Round Sleeve</label><input type="number" id="um-round_sleeve"></div>
+            <div class="form-group"><label>Sleeve Ankle</label><input type="number" id="um-sleeve_ankle"></div>
+            <div class="form-group"><label>Agbada Length</label><input type="number" id="um-agbada_length"></div>
+            <div class="form-group"><label>Agbada Width</label><input type="number" id="um-agbada_width"></div>
+            <div class="form-group"><label>Kaftan Length</label><input type="number" id="um-kaftan_length"></div>
+            <div class="form-group"><label>3/4 Length</label><input type="number" id="um-length_3qtr"></div>
+            <div class="form-group"><label>Jumper Length</label><input type="number" id="um-jumper_length"></div>
+            <div class="form-group"><label>Jallabiya</label><input type="number" id="um-jallabiya"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:24px;">
+          <h4
+            style="margin-bottom:12px;color:var(--accent);text-transform:uppercase;font-size:12px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:4px;">
+            Trousers / Wando</h4>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;">
+            <div class="form-group"><label>Trouser Length</label><input type="number" id="um-trouser_length"></div>
+            <div class="form-group"><label>Waist to Knee</label><input type="number" id="um-waist_to_knee"></div>
+            <div class="form-group"><label>Laps (Thigh)</label><input type="number" id="um-laps"></div>
+            <div class="form-group"><label>Knee Width</label><input type="number" id="um-knee_width"></div>
+            <div class="form-group"><label>Trousers Hem</label><input type="number" id="um-trouser_hem"></div>
+            <div class="form-group"><label>Trousers Waist</label><input type="number" id="um-trouser_waist"></div>
+            <div class="form-group"><label>Hip</label><input type="number" id="um-hip"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;" onclick="saveMeasurements()">Save Measurements</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="tailor-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="t-modal-name">Tailor</h2><button class="modal-close" onclick="closeModal('tailor-modal')">×</button>
+      </div>
+      <div class="modal-body" id="t-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="add-staff-modal">
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <h2>Add Staff</h2><button class="modal-close" onclick="closeModal('add-staff-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label>Full Name</label><input id="ns-name" placeholder="Staff name"></div>
+        <div class="form-group"><label>Email</label><input id="ns-email" placeholder="staff@threadx.com"></div>
+        <div class="form-group"><label>Role</label><select id="ns-role"
+            style="width:100%;padding:10px 13px;border:1px solid var(--tan);border-radius:8px;font-family:'El Messiri';font-size:14px;">
+            <option>Staff</option>
+            <option>Senior Tailor</option>
+            <option>Manager</option>
+          </select></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="addStaff()">Add Staff</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="revenue-edit-modal">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h2 id="rev-edit-title">Edit Payments</h2><button class="modal-close"
+          onclick="closeModal('revenue-edit-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:15px;" id="rev-edit-subtitle">Edit the paid amounts
+          for orders in this period.</p>
+        <div id="rev-edit-list"
+          style="max-height:400px;overflow-y:auto;margin-bottom:20px;display:flex;flex-direction:column;gap:10px;">
+          <!-- Dynamic -->
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="saveRevenueEdits()">Save All Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">
+    <div class="t-icon">✓</div><span id="toast-msg">Done!</span>
+  </div>
+
+  <script>
+    // DATA
+    const db = supabase.createClient('https://xjkpjsbzkuxidbeyrmqb.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqa3Bqc2J6a3V4aWRiZXlybXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTAyMzcsImV4cCI6MjA5NDAyNjIzN30.LbGFArruQVU_n3aWmjXpC2Re4ilcV4FJXndd-E0v1xU');
+
+    let currentUser = null;
+    let garments = [];
+    let customers = [];
+    let orders = [];
+    let tailors = [];
+    let staffList = [];
+
+    const tabNames = { dashboard: 'Dashboard', customers: 'Customers', orders: 'Orders', tailors: 'Tailors', invoice: 'Invoice', insights: 'Business Insights', settings: 'Settings' };
+
+    // AUTH
+    async function doLogin() {
+      const e = document.getElementById('login-email').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+      const err = document.getElementById('login-error');
+      let user = null;
+
+      if (e === 'ceo@threadx.com' && p === 'admin123') {
+        user = { name: 'Mubarak Maneer Muhammad', role: 'ceo', initials: 'MM' };
+      } else {
+        // Check Supabase staff table
+        const { data, error } = await db.from('staff').select('*').eq('email', e).eq('password', p).single();
+        if (data) {
+          user = { name: data.name, role: data.role.toLowerCase(), initials: initials(data.name) };
+        } else {
+          if (error) console.error("Login Error:", error);
+          err.style.display = 'block';
+          return;
+        }
+      }
+      err.style.display = 'none';
+      loginUser(user);
+    }
+    function loginUser(user) {
+      currentUser = user;
+      localStorage.setItem('txUser', JSON.stringify(user));
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('user-name').textContent = currentUser.name;
+      document.getElementById('user-role-label').textContent = currentUser.role.toUpperCase();
+      document.getElementById('user-avatar').textContent = currentUser.initials;
+      if (currentUser.role !== 'ceo') document.querySelectorAll('.ceo-only').forEach(el => el.style.display = 'none');
+      initApp();
+      const savedTab = localStorage.getItem('txTab') || 'dashboard';
+      showTabByName(savedTab);
+    }
+    function doLogout() {
+      currentUser = null;
+      localStorage.removeItem('txUser');
+      localStorage.removeItem('txTab');
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    }
+    document.getElementById('login-password').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+
+    // INIT
+    async function initApp() {
+      await refreshData();
+      renderDashOrders();
+      renderDashStats();
+      renderCustomers();
+      renderOrders();
+      renderTailors();
+      populateInvCustomers();
+      renderPriceMgr();
+      renderStaffList();
+      populateOrderForm();
+      renderInsights();
+    }
+
+    async function refreshData() {
+      const [resG, resC, resO, resS] = await Promise.all([
+        db.from('garments').select('*'),
+        db.from('customers').select('*'),
+        db.from('orders').select('*'),
+        db.from('staff').select('*')
+      ]);
+      garments = resG.data || [];
+      customers = resC.data || [];
+      orders = resO.data || [];
+      staffList = resS.data || [];
+      tailors = staffList.filter(s => s.role && s.role.toLowerCase().includes('tailor'));
+    }
+
+    // NAV
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('sidebar-overlay');
+      sb.classList.toggle('open');
+      ov.classList.toggle('open');
+    }
+
+    function showTab(name, el) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      const targetPanel = document.getElementById('tab-' + name);
+      if (targetPanel) targetPanel.classList.add('active');
+
+      if (el) {
+        el.classList.add('active');
+      } else {
+        document.querySelectorAll('.nav-item').forEach(n => {
+          if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(`'${name}'`)) n.classList.add('active');
+        });
+      }
+
+      document.getElementById('tab-title').textContent = tabNames[name] || (name.charAt(0).toUpperCase() + name.slice(1));
+      localStorage.setItem('txTab', name);
+
+      if (window.innerWidth <= 850) {
+        closeSidebar();
+      }
+    }
+    function showTabByName(n) { showTab(n, null); }
+
+    // HELPERS
+    function fmtDate(d) { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    function dueClass(d) {
+      const diff = (new Date(d) - new Date()) / 86400000;
+      if (diff < 0 || diff <= 2) return 'due-red';
+      if (diff <= 5) return 'due-yellow';
+      return 'due-green';
+    }
+    function sBadge(s) { const m = { 'Pending': 'badge-pending', 'In Progress': 'badge-progress', 'Ready': 'badge-ready', 'Done': 'badge-done', 'Delivered': 'badge-delivered' }; return `<span class="badge ${m[s] || ''}">${s}</span>`; }
+    function pBadge(p) { const m = { 'Paid': 'badge-paid', 'Part Payment': 'badge-part', 'Unpaid': 'badge-unpaid' }; return `<span class="badge ${m[p] || ''}">${p}</span>`; }
+    function toast(msg) { document.getElementById('toast-msg').textContent = msg; const t = document.getElementById('toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+    function openModal(id) { document.getElementById(id).classList.add('open'); document.body.classList.add('modal-open'); }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (!document.querySelector('.modal-overlay.open')) document.body.classList.remove('modal-open');
+    }
+    function initials(n) { return n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
+
+    // PERSISTENT PAYMENT DATES (Fallback for DB schema)
+    function saveLocalPaymentDate(orderId, date) {
+      let dates = JSON.parse(localStorage.getItem('tx_payment_dates') || '{}');
+      dates[orderId] = date;
+      localStorage.setItem('tx_payment_dates', JSON.stringify(dates));
+    }
+    function getLocalPaymentDate(orderId) {
+      let dates = JSON.parse(localStorage.getItem('tx_payment_dates') || '{}');
+      return dates[orderId];
+    }
+
+    // DASHBOARD
+    function openAddOrderModal() {
+      // Default Receive Date to Today
+      document.getElementById('no-received').value = new Date().toISOString().split('T')[0];
+      openModal('add-order-modal');
+    }
+
+    function renderDashOrders() {
+      const period = document.getElementById('dash-period') ? document.getElementById('dash-period').value : 'month';
+      const now = new Date();
+      let startTime = 0;
+      
+      if (period === 'week') {
+        const sun = new Date(now);
+        sun.setDate(now.getDate() - now.getDay());
+        sun.setHours(0,0,0,0);
+        startTime = sun.getTime();
+      } else if (period === 'month') {
+        startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      } else if (period === 'year') {
+        startTime = new Date(now.getFullYear(), 0, 1).getTime();
+      }
+
+      const filtered = orders.filter(o => {
+        if (period === 'all') return true;
+        // Use paid_at for revenue-related lists? 
+        // No, user said "recent orders", usually means creation date or due date. 
+        // We'll use due date as a proxy for recency if created_at isn't consistent.
+        const oDate = new Date(o.due).getTime();
+        return oDate >= startTime;
+      }).sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0, 10);
+
+      const table = document.getElementById('dash-orders');
+      if (filtered.length === 0) {
+        table.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No orders found for this period.</td></tr>`;
+        return;
+      }
+
+    table.innerHTML = `
+    <thead><tr><th>Customer</th><th>Garment</th><th>Tailor</th><th>Status</th><th>Recv Date</th><th>Due Date</th><th>Payment</th></tr></thead>
+    <tbody>${filtered.map(o => `<tr>
+      <td style="font-weight:500;">${o.customer}</td><td>${o.garment}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${o.tailor}</td>
+      <td>${sBadge(o.status)}</td>
+      <td style="font-size:12px;color:var(--text-dim);">${o.received_at ? fmtDate(o.received_at) : '—'}</td>
+      <td class="${dueClass(o.due)}">${fmtDate(o.due)}</td>
+      <td>${pBadge(o.payment)}</td>
+    </tr>`).join('')}</tbody>`;
+    }
+
+    function renderDashStats() {
+      document.getElementById('stat-total-cust').textContent = customers.length;
+      const active = orders.filter(o => o.status === 'Pending' || o.status === 'In Progress').length;
+      const ready = orders.filter(o => o.status === 'Ready' || o.status === 'Done').length;
+      document.getElementById('stat-active-orders').textContent = active;
+      document.getElementById('stat-ready-orders').textContent = ready;
+
+      // Dynamic revenue for consistency with Insights tab
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      let monthRev = 0;
+      orders.forEach(o => {
+        if (o.paid_at && new Date(o.paid_at) >= monthStart) {
+          monthRev += (o.paid || 0);
+        }
+      });
+      document.getElementById('stat-total-rev').textContent = '₦' + Math.round(monthRev).toLocaleString();
+    }
+
+    // CUSTOMERS
+    function renderCustomers(list) {
+      const data = list || customers;
+      document.getElementById('customer-grid').innerHTML = data.map(c => `
+    <div class="customer-card" onclick="openProfile(${c.id})">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="c-avatar">${initials(c.name)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="c-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</div>
+          <div class="c-phone">${c.phone}</div>
+          ${c.address ? `<div style="font-size:10px;color:var(--text-dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${c.address}</div>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+        <span class="badge ${c.tag === 'VIP' ? 'badge-vip' : 'badge-regular'}">${c.tag}</span>
+        <span style="font-size:10px;color:var(--text-dim);">#${c.id}</span>
+      </div>
+    </div>`).join('');
+    }
+    function filterCustomers(q) { 
+      const query = q.toLowerCase();
+      renderCustomers(customers.filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        c.phone.includes(query) || 
+        (c.address && c.address.toLowerCase().includes(query))
+      )); 
+    }
+
+    function openProfile(id) {
+      const c = customers.find(x => x.id === id);
+      const m = c.measurements || [];
+      const latest = m.length > 0 ? m[m.length - 1] : null;
+      const prev = m.length > 1 ? m[m.length - 2] : null;
+      let flag = '';
+      if (latest && prev) {
+        const fs = ['neck', 'shoulder', 'chest', 'waist', 'sleeve', 'length'];
+        const ch = fs.filter(f => Math.abs(latest[f] - prev[f]) > 5);
+        if (ch.length) flag = `<div class="measure-flag">⚠️ Significant change detected: <strong>${ch.join(', ')}</strong> — verify before cutting fabric.</div>`;
+      }
+      const custOrds = orders.filter(o => o.cid === id);
+      document.getElementById('prof-name').textContent = c.name;
+
+      let measureHtml = '';
+      if (latest) {
+        const riga = [
+          ['Shoulder', latest.shoulder], ['Neck', latest.neck], ['Sleeve Length', latest.sleeve_length],
+          ['3/4 Sleeve Len', latest.sleeve_3qtr_length], ['3/4 Sleeve Width', latest.sleeve_3qtr_width],
+          ['Chest', latest.chest], ['Lower Chest', latest.lower_chest], ['Kaftan Waist', latest.kaftan_waist],
+          ['Bicep', latest.bicep], ['Cufflinks', latest.cufflinks], ['Round Sleeve', latest.round_sleeve],
+          ['Sleeve Ankle', latest.sleeve_ankle], ['Agbada Length', latest.agbada_length],
+          ['Agbada Width', latest.agbada_width], ['Kaftan Length', latest.kaftan_length],
+          ['3/4 Length', latest.length_3qtr], ['Jumper Length', latest.jumper_length], ['Jallabiya', latest.jallabiya]
+        ].filter(x => x[1]);
+
+        const wando = [
+          ['Trouser Length', latest.trouser_length], ['Waist to Knee', latest.waist_to_knee],
+          ['Laps', latest.laps], ['Knee Width', latest.knee_width], ['Trouser Hem', latest.trouser_hem],
+          ['Trouser Waist', latest.trouser_waist], ['Hip', latest.hip]
+        ].filter(x => x[1]);
+
+        measureHtml = `
+      <div class="profile-section">
+        <h4>Measurements · ${latest.date}</h4>
+        
+        ${riga.length ? `
+        <h5 style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;">Top / Riga</h5>
+        <div class="measure-grid">
+          ${riga.map(([l, v]) => `
+          <div class="m-item"><div class="m-label">${l}</div><div class="m-val">${v}</div><div class="m-unit">cm</div></div>`).join('')}
+        </div>` : ''}
+
+        ${wando.length ? `
+        <h5 style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;">Trousers / Wando</h5>
+        <div class="measure-grid">
+          ${wando.map(([l, v]) => `
+          <div class="m-item"><div class="m-label">${l}</div><div class="m-val">${v}</div><div class="m-unit">cm</div></div>`).join('')}
+        </div>` : ''}
+
+        ${prev ? `<p style="font-size:11px;color:var(--text-muted);margin-top:12px;border-top:1px solid var(--border);padding-top:8px;">Last updated: ${prev.date}</p>` : ''}
+      </div>`;
+      } else {
+        measureHtml = `
+      <div class="profile-section" style="text-align:center;padding:30px 20px;background:rgba(var(--p1),0.02);border:1.5px dashed var(--border);border-radius:12px;margin-bottom:20px;">
+        <div style="font-size:32px;margin-bottom:10px;">📏</div>
+        <h4 style="color:var(--text-main);margin-bottom:6px;">No Measurements Yet</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Add measurements to start creating orders for this customer.</p>
+        <button class="btn btn-primary btn-sm" onclick="openMeasureModal(${id})">Add Measurements</button>
+      </div>`;
+      }
+
+      document.getElementById('prof-body').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="badge ${c.tag === 'VIP' ? 'badge-vip' : 'badge-regular'}">${c.tag}</span>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${c.phone}</span>
+          ${c.address ? `<span style="font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${c.address}</span>` : ''}
+        </div>
+      </div>
+      <span style="font-size:11px;color:var(--text-dim);font-weight:600;">ID: #${c.id}</span>
+    </div>
+
+    <div class="p-tabs">
+      <div class="p-tab active" onclick="switchProfileTab(this, 'm')">Measurements</div>
+      <div class="p-tab" onclick="switchProfileTab(this, 'h')">Order History</div>
+    </div>
+
+    <div id="p-tab-m" class="p-tab-content active">
+      ${flag}
+      ${measureHtml}
+      <div style="margin-top:20px;display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" style="flex:2;" onclick="openMeasureModal(${id})">${latest ? 'Update' : 'Add'} Measurements</button>
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="removeCustomer(${id})">Delete Profile</button>
+      </div>
+    </div>
+
+    <div id="p-tab-h" class="p-tab-content">
+      ${c.notes ? `<div style="margin-bottom:15px;padding:12px;background:rgba(var(--p1),0.02);border-radius:8px;border:1px solid var(--border);"><p style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:700;">Notes</p><p style="font-size:13px;color:var(--text-main);">${c.notes}</p></div>` : ''}
+      <div class="profile-section" style="margin-top:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h4 style="margin:0;">Recent Orders</h4>
+          <select id="prof-period" onchange="renderProfileHistory(${id})" style="padding:4px 8px;font-size:11px;border-radius:6px;background:var(--bg-app);border:1px solid var(--border);color:var(--text-main);font-family:'El Messiri';">
+            <option value="all">All Time</option>
+            <option value="week">Past 7 Days</option>
+            <option value="month">Past 30 Days</option>
+            <option value="year">Past Year</option>
+          </select>
+        </div>
+        <div id="prof-history-list" style="max-height:300px;overflow-y:auto;padding-right:4px;">
+           <!-- Dynamic -->
+        </div>
+      </div>
+    </div>`;
+      openModal('customer-profile-modal');
+      renderProfileHistory(id);
+    }
+
+    function renderProfileHistory(cid) {
+      const period = document.getElementById('prof-period').value;
+      const now = new Date();
+      let startTime = 0;
+      
+      if (period === 'week') startTime = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+      else if (period === 'month') startTime = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+      else if (period === 'year') startTime = now.getTime() - (365 * 24 * 60 * 60 * 1000);
+
+      const filtered = orders.filter(o => {
+        if (o.cid !== cid) return false;
+        if (period === 'all') return true;
+        // Use created_at if available, fallback to due date if not
+        const oDate = new Date(o.created_at || o.due).getTime();
+        return oDate >= startTime;
+      }).sort((a,b) => new Date(b.due) - new Date(a.due));
+
+      const list = document.getElementById('prof-history-list');
+      if (filtered.length === 0) {
+        list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;">No orders found for this period.</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(o => `
+        <div class="oh-item">
+          <div>
+            <p style="font-weight:600;font-size:13px;margin-bottom:2px;">${o.garment}</p>
+            <span style="font-size:11px;color:var(--text-muted);">Due: ${fmtDate(o.due)}</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            ${sBadge(o.status)}
+            ${pBadge(o.payment)}
+          </div>
+        </div>`).join('');
+    }
+
+    function switchProfileTab(el, tab) {
+      const modal = el.closest('.modal');
+      modal.querySelectorAll('.p-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      modal.querySelectorAll('.p-tab-content').forEach(c => c.classList.remove('active'));
+      modal.querySelector('#p-tab-' + tab).classList.add('active');
+    }
+
+    function openMeasureModal(cid) {
+      const c = customers.find(x => x.id === cid);
+      document.getElementById('um-cid').value = cid;
+      const m = c.measurements || [];
+      const latest = m.length > 0 ? m[m.length - 1] : {};
+
+      const fields = [
+        'shoulder', 'neck', 'sleeve_length', 'sleeve_3qtr_length', 'sleeve_3qtr_width',
+        'chest', 'lower_chest', 'kaftan_waist', 'bicep', 'cufflinks', 'round_sleeve',
+        'sleeve_ankle', 'agbada_length', 'agbada_width', 'kaftan_length', 'length_3qtr',
+        'jumper_length', 'jallabiya', 'trouser_length', 'waist_to_knee', 'laps',
+        'knee_width', 'trouser_hem', 'trouser_waist', 'hip'
+      ];
+
+      fields.forEach(f => {
+        document.getElementById('um-' + f).value = latest[f] || '';
+      });
+
+      openModal('update-measure-modal');
+    }
+
+    async function saveMeasurements() {
+      const cid = parseInt(document.getElementById('um-cid').value);
+      const c = customers.find(x => x.id === cid);
+
+      const fields = [
+        'shoulder', 'neck', 'sleeve_length', 'sleeve_3qtr_length', 'sleeve_3qtr_width',
+        'chest', 'lower_chest', 'kaftan_waist', 'bicep', 'cufflinks', 'round_sleeve',
+        'sleeve_ankle', 'agbada_length', 'agbada_width', 'kaftan_length', 'length_3qtr',
+        'jumper_length', 'jallabiya', 'trouser_length', 'waist_to_knee', 'laps',
+        'knee_width', 'trouser_hem', 'trouser_waist', 'hip'
+      ];
+
+      const newM = {
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      };
+
+      fields.forEach(f => {
+        newM[f] = parseFloat(document.getElementById('um-' + f).value) || 0;
+      });
+
+      const mList = [...(c.measurements || []), newM];
+      const { error } = await db.from('customers').update({ measurements: mList }).eq('id', cid);
+
+      if (error) { toast('Error saving measurements'); return; }
+
+      await refreshData();
+      closeModal('update-measure-modal');
+      openProfile(cid);
+      toast('Measurements updated');
+    }
+
+    async function addCustomer() {
+      const name = document.getElementById('nc-name').value.trim();
+      if (!name) { toast('Enter a name'); return; }
+
+      const { data, error } = await db.from('customers').insert([{
+        name,
+        phone: document.getElementById('nc-phone').value,
+        email: document.getElementById('nc-email').value,
+        address: document.getElementById('nc-address').value,
+        tag: document.getElementById('nc-tag').value,
+        notes: document.getElementById('nc-notes').value,
+        measurements: []
+      }]).select();
+
+      if (error) { console.error(error); toast('Error adding customer'); return; }
+
+      const newCustId = data[0].id;
+      await refreshData();
+      renderCustomers();
+      populateInvCustomers();
+      closeModal('add-customer-modal');
+      toast(name + ' added successfully');
+      ['nc-name', 'nc-phone', 'nc-email', 'nc-address', 'nc-notes'].forEach(id => document.getElementById(id).value = '');
+
+      // Pull up measurements/profile immediately
+      openProfile(newCustId);
+    }
+
+    async function removeCustomer(id) {
+      const c = customers.find(x => x.id === id);
+      if (!confirm(`Are you sure you want to delete ${c.name}? This will permanently remove their measurements and all associated orders.`)) return;
+
+      // Delete orders first
+      await db.from('orders').delete().eq('cid', id);
+
+      // Delete customer
+      const { error } = await db.from('customers').delete().eq('id', id);
+
+      if (error) {
+        toast('Error deleting customer');
+        console.error(error);
+      } else {
+        toast('Customer and orders removed');
+        closeModal('customer-profile-modal');
+        await refreshData();
+        renderCustomers();
+        renderOrders();
+        renderDashOrders();
+        renderDashStats();
+        renderInsights();
+        populateInvCustomers();
+      }
+    }
+
+    // ORDERS
+    function getFilteredOrders() {
+      const fs = document.getElementById('f-status').value;
+      const ft = document.getElementById('f-tailor').value;
+      const fp = document.getElementById('f-pay').value;
+      return orders.filter(o => (!fs || o.status === fs) && (!ft || o.tailor === ft) && (!fp || o.payment === fp));
+    }
+    function renderOrders() {
+      const data = getFilteredOrders();
+      const grouped = {};
+      data.forEach(o => {
+        const bid = o.batch_id || ('single-' + o.id);
+        if (!grouped[bid]) grouped[bid] = [];
+        grouped[bid].push(o);
+      });
+
+      const sortedBatches = Object.values(grouped).sort((a, b) => {
+        const idA = a[0].id;
+        const idB = b[0].id;
+        return idB - idA;
+      });
+
+      document.getElementById('orders-table').innerHTML = `
+    <thead><tr><th>Customer</th><th>Items</th><th>Tailor(s)</th><th>Total Price</th><th>Recv</th><th>Due</th><th>Progress</th><th></th></tr></thead>
+    <tbody>${sortedBatches.map(batch => {
+        const main = batch[0];
+        const counts = {};
+        batch.forEach(o => counts[o.garment] = (counts[o.garment] || 0) + 1);
+        const garmentSummary = Object.entries(counts).map(([name, q]) => q > 1 ? `${name} (x${q})` : name).join(', ');
+
+        const tailors = [...new Set(batch.map(o => o.tailor))].join(', ');
+        const totalPrice = batch.reduce((sum, o) => sum + o.price, 0);
+        const readyCount = batch.filter(o => o.status === 'Ready' || o.status === 'Delivered').length;
+        const progress = `${readyCount}/${batch.length} Ready`;
+
+        return `<tr>
+        <td style="font-weight:600;">${main.customer}</td>
+        <td style="font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${garmentSummary}">${garmentSummary}</td>
+        <td style="color:var(--text-muted);font-size:12px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${tailors}">${tailors}</td>
+        <td style="font-weight:700;">₦${totalPrice.toLocaleString()}</td>
+        <td style="font-size:11px;color:var(--text-dim);">${main.received_at ? fmtDate(main.received_at) : '—'}</td>
+        <td class="${dueClass(main.due)}">${fmtDate(main.due)}</td>
+        <td>${batch.length > 1 ? `<span style="font-size:11px;background:var(--bg-app);padding:4px 8px;border-radius:6px;color:var(--text-dim);font-weight:700;border:1px solid var(--border);">${progress}</span>` : sBadge(main.status)}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openOrderDetail(${main.id})">View</button></td>
+      </tr>`;
+      }).join('')}</tbody>`;
+    }
+    function openOrderDetail(id) {
+      const mainOrder = orders.find(x => x.id === id);
+      const batch = mainOrder.batch_id ? orders.filter(o => o.batch_id === mainOrder.batch_id) : [mainOrder];
+
+      const displayGroups = {};
+      batch.forEach(o => {
+        const key = o.garment + '-' + o.tailor;
+        if (!displayGroups[key]) displayGroups[key] = { name: o.garment, tailor: o.tailor, qty: 0, status: o.status, price: o.price, ids: [] };
+        displayGroups[key].qty++;
+        displayGroups[key].ids.push(o.id);
+      });
+
+      const totalPrice = batch.reduce((sum, o) => sum + o.price, 0);
+      const totalPaid = batch.reduce((sum, o) => sum + o.paid, 0);
+
+      let batchHtml = Object.values(displayGroups).map(g => `
+    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:var(--bg-card);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <strong style="font-size:15px;color:var(--text-main);">${g.name}</strong>
+          ${g.qty > 1 ? `<span style="font-size:11px;margin-left:4px;color:var(--accent);font-weight:700;">x${g.qty}</span>` : ''}
+        </div>
+        ${sBadge(g.status)}
+      </div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">
+        Tailor: <strong>${g.tailor}</strong> · Total Price: ₦${(g.price * g.qty).toLocaleString()}
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="font-size:9px;">Update Group Status</label>
+        <select class="batch-status-update" data-ids="${g.ids.join(',')}" style="padding:8px;font-size:12px;width:100%;border-radius:6px;border:1px solid var(--border);background:var(--bg-app);color:var(--text-main);">
+          ${['Pending', 'In Progress', 'Ready', 'Done', 'Delivered'].map(s => `<option ${s === g.status ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>`).join('');
+
+      document.getElementById('order-detail-body').innerHTML = `
+    <div style="margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-weight:700;">Customer</div>
+      <div style="font-family:'El Messiri',serif;font-size:24px;font-weight:700;color:var(--text-main);">${mainOrder.customer}</div>
+    </div>
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700;">Order Summary</div>
+      ${batchHtml}
+    </div>
+    <div style="background:var(--bg-app);padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;color:var(--text-dim);"><span>Subtotal:</span><strong style="color:var(--text-main);">₦${totalPrice.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;color:var(--text-dim);"><span>Amount Paid:</span><strong style="color:var(--text-main);">₦${totalPaid.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;color:var(--danger);font-size:16px;font-weight:700;border-top:1px solid var(--border);padding-top:10px;margin-top:6px;">
+        <span>Balance Due:</span><span>₦${(totalPrice - totalPaid).toLocaleString()}</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <button class="btn btn-primary" onclick="saveBatchOrders()">Save Changes</button>
+      <button class="btn btn-secondary" onclick="invoiceFromOrder(${mainOrder.cid}, [${batch.map(o => o.id).join(',')}])">Invoice</button>
+    </div>`;
+      openModal('order-detail-modal');
+    }
+    async function saveBatchOrders() {
+      const selects = document.querySelectorAll('.batch-status-update');
+      const updates = [];
+
+      selects.forEach(sel => {
+        const ids = sel.getAttribute('data-ids').split(',').map(id => parseInt(id));
+        const newStatus = sel.value;
+        ids.forEach(oid => {
+          updates.push(db.from('orders').update({ status: newStatus }).eq('id', oid));
+        });
+      });
+
+      await Promise.all(updates);
+      await refreshData();
+      renderOrders(); renderDashOrders(); renderDashStats(); renderInsights(); renderTailors();
+      closeModal('order-detail-modal');
+      toast('Order status updated');
+    }
+    function invoiceFromOrder(cid, oids) {
+      closeModal('order-detail-modal');
+      showTabByName('invoice');
+      document.getElementById('inv-cust').value = cid;
+      loadCustOrders();
+
+      setTimeout(() => {
+        const checks = document.querySelectorAll('.inv-item-check');
+        checks.forEach(cb => {
+          const [type, id] = cb.value.split('-');
+          if (type === 'order' && oids.includes(parseInt(id))) {
+            cb.checked = true;
+          } else {
+            cb.checked = false;
+          }
+        });
+        updateInvoicePreview();
+      }, 100);
+    }
+
+    function filterOrderCustomers(val) {
+      const dd = document.getElementById('no-cust-dropdown');
+      const hidden = document.getElementById('no-cust');
+      if (!val.trim()) { dd.style.display = 'none'; return; }
+      const matches = customers.filter(c => c.name.toLowerCase().includes(val.toLowerCase()));
+      if (!matches.length) { dd.style.display = 'none'; return; }
+      dd.innerHTML = matches.map(c => {
+        const safeName = c.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `<div onclick="selectOrderCustomer(${c.id}, '${safeName}')" 
+      style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background 0.15s;"
+      onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background=''">
+      <strong>${c.name}</strong><span style="font-size:11px;color:var(--text-dim);margin-left:8px;">${c.phone || ''}</span>
+    </div>`;
+      }).join('');
+      dd.style.display = 'block';
+    }
+    function selectOrderCustomer(id, name) {
+      document.getElementById('no-cust').value = id;
+      document.getElementById('no-cust-input').value = name;
+      document.getElementById('no-cust-dropdown').style.display = 'none';
+    }
+    function hideOrderSuggest() {
+      document.getElementById('no-cust-dropdown').style.display = 'none';
+    }
+    function openNewOrderModal() {
+      // Reset customer typeahead
+      document.getElementById('no-cust-input').value = '';
+      document.getElementById('no-cust').value = '';
+      document.getElementById('no-cust-dropdown').style.display = 'none';
+      // Uncheck all items
+      document.querySelectorAll('.no-item-check').forEach(cb => cb.checked = false);
+      document.querySelectorAll('.no-item-qty').forEach(inp => inp.value = 1);
+      openModal('add-order-modal');
+    }
+
+    function populateOrderForm() {
+      const tOpts = tailors.map(t => `<option>${t.name}</option>`).join('');
+      // Populate tailor filter in orders tab
+      document.getElementById('f-tailor').innerHTML = '<option value="">All Tailors</option>' + tailors.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+      document.getElementById('no-catalogue-list').innerHTML = garments.map(g => `
+    <div style="padding:10px;border:1px solid var(--tan);border-radius:8px;background:var(--cream-dark);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;font-weight:600;">
+          <input type="checkbox" class="no-item-check" value="${g.id}">
+          <span>${g.name} — ₦${g.price.toLocaleString()}</span>
+        </label>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:11px;">Qty:</span>
+          <input type="number" class="no-item-qty" value="1" min="1" style="width:45px;padding:3px;border:1px solid var(--tan);border-radius:4px;">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Tailor:</span>
+        <select class="no-item-tailor" style="flex:1;padding:5px;font-size:12px;border:1px solid var(--tan);border-radius:4px;">${tOpts}</select>
+      </div>
+    </div>`).join('');
+    }
+    async function addOrder() {
+      const cid = parseInt(document.getElementById('no-cust').value);
+      if (!cid) { toast('Select a customer'); return; }
+      const c = customers.find(x => x.id === cid);
+      const received = document.getElementById('no-received').value || new Date().toISOString().split('T')[0];
+      const due = document.getElementById('no-due').value;
+      const fabric = document.getElementById('no-fabric').value;
+      const payStatus = document.getElementById('no-pay').value;
+
+      if (!due) { toast('Set a due date'); return; }
+
+      const selectedRows = Array.from(document.querySelectorAll('#no-catalogue-list > div'));
+      let ordersToInsert = [];
+      const batchId = Date.now();
+
+      selectedRows.forEach((row, idx) => {
+        const cb = row.querySelector('.no-item-check');
+        if (cb.checked) {
+          const gid = parseInt(cb.value);
+          const g = garments.find(x => x.id === gid);
+          const qty = parseInt(row.querySelector('.no-item-qty').value) || 1;
+          const tailor = row.querySelector('.no-item-tailor').value;
+
+          for (let i = 0; i < qty; i++) {
+            ordersToInsert.push({
+              cid,
+              customer: c.name,
+              garment: g.name,
+              price: g.price,
+              tailor,
+              status: 'Pending',
+              payment: payStatus,
+              paid: 0,
+              received_at: received,
+              due,
+              fabric,
+              batch_id: batchId
+            });
+          }
+        }
+      });
+
+      if (ordersToInsert.length === 0) {
+        toast('Select at least one item from the catalogue');
+        return;
+      }
+
+      const { error } = await db.from('orders').insert(ordersToInsert);
+      if (error) { toast('Error saving order'); return; }
+
+      await refreshData();
+      renderOrders(); renderDashOrders(); renderDashStats(); renderInsights(); renderTailors();
+      closeModal('add-order-modal');
+      toast(`${ordersToInsert.length} items added for ${c.name}`);
+    }
+
+    // TAILORS
+    function renderTailors() {
+      document.getElementById('tailor-grid').innerHTML = tailors.map(t => {
+        const cnt = orders.filter(o => o.tailor === t.name && !['Delivered', 'Ready', 'Done'].includes(o.status)).length;
+        const pct = Math.min((cnt / 8) * 100, 100);
+        return `<div class="tailor-card" onclick="openTailorModal('${t.name}')">
+      <div class="t-avatar">${initials(t.name)}</div>
+      <div class="t-name">${t.name}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${cnt} active orders</div>
+      <div class="workload-bar"><div class="workload-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);">
+        <span>Workload</span><span>${cnt}/8</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:12px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="event.stopPropagation();promptPass('tailor', ${t.id})">Pass</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="event.stopPropagation();removeTailor(${t.id})">Remove</button>
+      </div>
+    </div>`;
+      }).join('');
+    }
+    function openTailorModal(name) {
+      document.getElementById('t-modal-name').textContent = name;
+      const tOrds = orders.filter(o => o.tailor === name && !['Delivered', 'Ready', 'Done'].includes(o.status));
+      document.getElementById('t-modal-body').innerHTML = tOrds.length ? `
+    <table><thead><tr><th>Customer</th><th>Garment</th><th>Status</th><th>Due</th></tr></thead>
+    <tbody>${tOrds.map(o => `<tr><td style="font-weight:500;">${o.customer}</td><td>${o.garment}</td><td>${sBadge(o.status)}</td><td class="${dueClass(o.due)}">${fmtDate(o.due)}</td></tr>`).join('')}</tbody></table>`
+        : '<p style="color:var(--text-muted);font-size:13px;">No orders assigned.</p>';
+      openModal('tailor-modal');
+    }
+    async function addTailor() {
+      const name = document.getElementById('nt-name').value.trim();
+      const email = prompt("Enter tailor's email:");
+      if (!name || !email) return;
+      const { error } = await db.from('staff').insert([{ name, email, role: 'Tailor', password: '123' }]);
+      if (error) { toast('Error adding tailor'); return; }
+      await refreshData();
+      renderTailors(); renderStaffList(); populateOrderForm();
+      closeModal('add-tailor-modal');
+      toast(name + ' added');
+    }
+    async function removeTailor(id) {
+      const { error } = await db.from('staff').delete().eq('id', id);
+      if (error) { toast('Error removing tailor'); return; }
+      await refreshData();
+      renderTailors(); renderStaffList();
+      toast('Tailor removed');
+    }
+
+    // INVOICE
+    function populateInvCustomers() {
+      document.getElementById('inv-cust').innerHTML = '<option value="">— Choose customer —</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+    function suggestCustomers(val) {
+      const dl = document.getElementById('cust-suggestions');
+      dl.innerHTML = '';
+      if (val.length < 1) return;
+      const matches = customers.filter(c => c.name.toLowerCase().includes(val.toLowerCase()));
+      matches.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        dl.appendChild(opt);
+      });
+      const exact = customers.find(c => c.name.toLowerCase() === val.toLowerCase());
+      if (exact) {
+        document.getElementById('inv-cust').value = exact.id;
+        loadCustOrders();
+      }
+    }
+    function loadCustOrders() {
+      const cid = parseInt(document.getElementById('inv-cust').value);
+      const orderList = document.getElementById('inv-orders-list');
+      if (!cid) { orderList.innerHTML = '<p style="font-size:12px;color:var(--text-muted);">Select a customer first</p>'; resetInv(); return; }
+
+      const co = orders.filter(o => o.cid === cid);
+      let html = '';
+
+      if (co.length > 0) {
+        html += '<div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-weight:600;">Pending Orders</div>';
+        html += co.map(o => `
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--cream-dark);">
+        <input type="checkbox" class="inv-item-check" value="order-${o.id}" onchange="updateInvoicePreview()">
+        <span>${o.garment} <small style="color:var(--text-muted);">(Order #${o.id})</small> — ₦${o.price.toLocaleString()}</span>
+      </label>`).join('');
+      }
+
+      html += '<div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px;font-weight:600;">All Garments (Catalogue)</div>';
+      html += garments.map(g => `
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--cream-dark);">
+      <input type="checkbox" class="inv-item-check" value="garment-${g.id}" onchange="updateInvoicePreview()">
+      <span>${g.name} — ₦${g.price.toLocaleString()}</span>
+    </label>`).join('');
+
+      orderList.innerHTML = html;
+      updateInvoicePreview();
+    }
+    function updateInvoicePreview() {
+      const cid = parseInt(document.getElementById('inv-cust').value);
+      if (!cid) { resetInv(); return; }
+      const c = customers.find(x => x.id === cid);
+
+      const selectedItems = Array.from(document.querySelectorAll('.inv-item-check:checked')).map(cb => {
+        const [type, id] = cb.value.split('-');
+        return { type, id: parseInt(id) };
+      });
+
+      document.getElementById('inv-cname').textContent = c.name;
+      document.getElementById('inv-cphone').textContent = c.phone || '—';
+      document.getElementById('inv-date').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      const container = document.getElementById('inv-items-container');
+      if (selectedItems.length === 0) {
+        container.innerHTML = '<div class="inv-row"><span style="color:var(--text-muted);">No items selected</span><span>—</span></div>';
+        document.getElementById('inv-total').textContent = '₦0';
+        return;
+      }
+
+      // Grouping logic
+      const groups = {};
+      selectedItems.forEach(item => {
+        let name = '', price = 0;
+        if (item.type === 'order') {
+          const o = orders.find(x => x.id === item.id);
+          if (o) { name = o.garment; price = o.price; }
+        } else {
+          const g = garments.find(x => x.id === item.id);
+          if (g) { name = g.name; price = g.price; }
+        }
+        if (name) {
+          if (!groups[name]) groups[name] = { qty: 0, total: 0, unitPrice: price };
+          groups[name].qty++;
+          groups[name].total += price;
+        }
+      });
+
+      let subtotal = 0;
+      let itemsHtml = '<div class="inv-row" style="font-weight:600;border-bottom:1.5px solid var(--tan);"><span style="flex:2;">Description</span><span style="flex:0.5;text-align:center;">Qty</span><span style="flex:1;text-align:right;">Amount</span></div>';
+
+      Object.entries(groups).forEach(([name, data]) => {
+        subtotal += data.total;
+        itemsHtml += `
+      <div class="inv-row">
+        <span style="flex:2;color:var(--text-muted);">${name}</span>
+        <span style="flex:0.5;text-align:center;">${data.qty}</span>
+        <span style="flex:1;text-align:right;">₦${data.total.toLocaleString()}</span>
+      </div>`;
+      });
+
+      container.innerHTML = itemsHtml;
+
+      const discountPerc = parseFloat(document.getElementById('inv-discount').value) || 0;
+      const adj = parseFloat(document.getElementById('inv-adj').value) || 0;
+      const discountAmt = (discountPerc / 100) * subtotal;
+      const total = subtotal - discountAmt + adj;
+      const paid = parseFloat(document.getElementById('inv-paid').value) || 0;
+      const balance = total - paid;
+      const perc = total > 0 ? Math.round((paid / total) * 100) : 0;
+
+      if (discountPerc > 0) {
+        document.getElementById('inv-discount-row').style.display = 'flex';
+        document.getElementById('inv-discount-val').textContent = `-₦${discountAmt.toLocaleString()}`;
+      } else {
+        document.getElementById('inv-discount-row').style.display = 'none';
+      }
+
+      if (adj !== 0) {
+        document.getElementById('inv-adj-row').style.display = 'flex';
+        document.getElementById('inv-adj-val').textContent = (adj > 0 ? '+' : '') + '₦' + adj.toLocaleString();
+      } else {
+        document.getElementById('inv-adj-row').style.display = 'none';
+      }
+
+      if (paid > 0) {
+        document.getElementById('inv-paid-row').style.display = 'flex';
+        document.getElementById('inv-paid-val').textContent = `₦${paid.toLocaleString()}`;
+        document.getElementById('inv-paid-perc').textContent = `(${perc}%)`;
+
+        if (balance > 0) {
+          document.getElementById('inv-bal-row').style.display = 'flex';
+          document.getElementById('inv-bal-val').textContent = `₦${balance.toLocaleString()}`;
+        } else {
+          document.getElementById('inv-bal-row').style.display = 'none';
+        }
+      } else {
+        document.getElementById('inv-paid-row').style.display = 'none';
+        document.getElementById('inv-bal-row').style.display = 'none';
+      }
+
+      document.getElementById('inv-total').textContent = '₦' + Math.round(total).toLocaleString();
+    }
+    function resetInv() {
+      document.getElementById('inv-cname').textContent = '—';
+      document.getElementById('inv-cphone').textContent = '—';
+      document.getElementById('inv-date').textContent = '—';
+      document.getElementById('inv-items-container').innerHTML = '<div class="inv-row"><span style="color:var(--text-muted);">No items selected</span><span>—</span></div>';
+      document.getElementById('inv-total').textContent = '₦0';
+      document.getElementById('inv-discount').value = '0';
+      document.getElementById('inv-adj').value = '0';
+      document.getElementById('inv-discount-row').style.display = 'none';
+      document.getElementById('inv-adj-row').style.display = 'none';
+    }
+    async function recordPayment() {
+      const btn = event.target;
+      const originalText = btn.textContent;
+
+      const cid = parseInt(document.getElementById('inv-cust').value);
+      if (!cid) { toast('Select a customer first'); return; }
+      const c = customers.find(x => x.id === cid);
+      if (!c) { toast('Customer data not found'); return; }
+
+      const paidAmount = parseFloat(document.getElementById('inv-paid').value) || 0;
+      if (paidAmount <= 0) { toast('Enter an amount to record'); return; }
+
+      const selectedChecks = Array.from(document.querySelectorAll('.inv-item-check:checked'));
+      let orderIds = selectedChecks
+        .filter(cb => cb.value.startsWith('order-'))
+        .map(cb => parseInt(cb.value.split('-')[1]));
+
+      // AUTO-SELECT LOGIC: If no orders are checked, find all unpaid/part-paid orders for this customer
+      if (orderIds.length === 0) {
+        console.log("No orders selected, auto-finding pending orders...");
+        orderIds = orders
+          .filter(o => o.cid === cid && o.payment !== 'Paid')
+          .sort((a, b) => a.id - b.id) // Pay oldest first
+          .map(o => o.id);
+
+        if (orderIds.length === 0) {
+          toast('No pending orders found for this customer to apply payment to.');
+          return;
+        }
+        console.log(`Auto-selected ${orderIds.length} orders for payment distribution.`);
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Recording...';
+
+      const ordersToUpdate = orders.filter(o => orderIds.includes(o.id));
+      let remainingPaid = paidAmount;
+      const now = new Date().toISOString();
+
+      // Update local data first for INSTANT reflection
+      let tempRemaining = paidAmount;
+      ordersToUpdate.forEach(o => {
+        const stillOwed = o.price - (o.paid || 0);
+        let amountToApply = 0;
+        if (tempRemaining > 0) {
+          amountToApply = Math.min(tempRemaining, stillOwed);
+          tempRemaining -= amountToApply;
+        }
+        o.paid = (o.paid || 0) + amountToApply;
+        o.paid_at = now;
+        if (o.paid >= o.price) o.payment = 'Paid';
+        else if (o.paid > 0) o.payment = 'Part Payment';
+      });
+
+      // Refresh UI instantly
+      renderInsights();
+      renderOrders();
+      renderDashStats();
+
+      const updates = ordersToUpdate.map(o => {
+        return db.from('orders').update({
+          paid: o.paid,
+          payment: o.payment,
+          paid_at: now
+        }).eq('id', o.id);
+      });
+
+      try {
+        const results = await Promise.all(updates);
+        const errors = results.filter(r => r.error);
+
+        if (errors.length > 0) {
+          console.error("Supabase errors:", errors);
+          if (errors[0].error.message.includes('paid_at') || errors[0].error.code === 'PGRST204') {
+            const fallbackUpdates = ordersToUpdate.map(o => {
+              return db.from('orders').update({ paid: o.paid, payment: o.payment }).eq('id', o.id);
+            });
+            await Promise.all(fallbackUpdates);
+            ordersToUpdate.forEach(o => o.paid_at = now);
+          } else {
+            toast('Error: ' + errors[0].error.message);
+            btn.disabled = false;
+            btn.textContent = originalText;
+            return;
+          }
+        }
+
+        toast(`✅ ₦${paidAmount.toLocaleString()} recorded for ${c.name}`);
+
+        // Save dates locally so they survive the refreshData() even if DB doesn't support the column
+        ordersToUpdate.forEach(o => saveLocalPaymentDate(o.id, now));
+
+        await refreshData();
+        renderInsights();
+        renderOrders();
+        renderDashStats();
+
+        document.getElementById('inv-paid').value = 0;
+        updateInvoicePreview();
+      } catch (e) {
+        console.error("Execution error:", e);
+        toast('Failed to record payment');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    function dlPDF() {
+      const cn = document.getElementById('inv-cname').textContent;
+      if (cn === '—') { toast('Select a customer and items first'); return; }
+      const cid = parseInt(document.getElementById('inv-cust').value);
+      const customer = customers.find(x => x.id === cid);
+      const cphone = customer ? (customer.phone || '—') : '—';
+      const selectedItems = Array.from(document.querySelectorAll('.inv-item-check:checked')).map(cb => {
+        const [type, id] = cb.value.split('-');
+        return { type, id: parseInt(id) };
+      });
+      if (selectedItems.length === 0) { toast('No items selected'); return; }
+
+      const { jsPDF } = window.jspdf, doc = new jsPDF();
+      doc.setFillColor(50, 43, 20); doc.rect(0, 0, 210, 38, 'F');
+      doc.setTextColor(234, 220, 205); doc.setFontSize(26); doc.setFont('helvetica', 'bold');
+      doc.text('THREAD X', 20, 20);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+      doc.text('BIRNIN KEBBI, NIGERIA', 20, 30);
+      doc.setTextColor(50, 43, 20); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+      doc.text('INVOICE TO:', 20, 52); doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+      doc.text(cn, 20, 61);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+      doc.text('Phone: ' + cphone, 20, 68);
+      doc.text('Date: ' + new Date().toLocaleDateString('en-GB'), 130, 52);
+      doc.setDrawColor(232, 213, 183); doc.line(20, 75, 190, 75);
+
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+      doc.text('Item Description', 20, 85);
+      doc.text('Qty', 140, 85);
+      doc.text('Amount', 165, 85);
+      doc.line(20, 87, 190, 87);
+
+      let y = 95;
+      let subtotal = 0;
+      doc.setFont('helvetica', 'normal');
+
+      const groups = {};
+      selectedItems.forEach(item => {
+        let name = '', price = 0;
+        if (item.type === 'order') {
+          const o = orders.find(x => x.id === item.id);
+          if (o) { name = o.garment; price = o.price; }
+        } else if (item.type === 'garment') {
+          const g = garments.find(x => x.id === item.id);
+          if (g) { name = g.name; price = g.price; }
+        }
+        if (name) {
+          if (!groups[name]) groups[name] = { qty: 0, total: 0 };
+          groups[name].qty++;
+          groups[name].total += price;
+        }
+      });
+
+      Object.entries(groups).forEach(([name, data]) => {
+        doc.text(name, 20, y);
+        doc.text(data.qty.toString(), 142, y);
+        doc.text('N' + data.total.toLocaleString(), 165, y);
+        subtotal += data.total;
+        y += 10;
+      });
+
+      const discountPerc = parseFloat(document.getElementById('inv-discount').value) || 0;
+      const adj = parseFloat(document.getElementById('inv-adj').value) || 0;
+      const discountAmt = (discountPerc / 100) * subtotal;
+      const total = subtotal - discountAmt + adj;
+      const paid = parseFloat(document.getElementById('inv-paid').value) || 0;
+      const balance = total - paid;
+      const perc = total > 0 ? Math.round((paid / total) * 100) : 0;
+
+      y += 5;
+      doc.line(20, y, 190, y); y += 8;
+      if (discountPerc > 0) {
+        doc.text(`Discount (${discountPerc}%):`, 120, y); doc.text(`-N${discountAmt.toLocaleString()}`, 160, y); y += 8;
+      }
+      if (adj !== 0) {
+        doc.text(`Adjustment:`, 120, y); doc.text(`${adj > 0 ? '+' : ''}N${adj.toLocaleString()}`, 160, y); y += 8;
+      }
+
+      doc.setFillColor(50, 43, 20); doc.rect(110, y, 80, 14, 'F');
+      doc.setTextColor(234, 220, 205); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+      doc.text('TOTAL AMOUNT:', 116, y + 9);
+      doc.text('N' + Math.round(total).toLocaleString(), 155, y + 9);
+      y += 20;
+
+      if (paid > 0) {
+        doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(39, 174, 96);
+        doc.text(`Amount Paid (${perc}%):`, 120, y); doc.text(`N${paid.toLocaleString()}`, 160, y); y += 8;
+        if (balance > 0) {
+          doc.setTextColor(192, 57, 43);
+          doc.text(`Outstanding Balance:`, 120, y); doc.text(`N${balance.toLocaleString()}`, 160, y); y += 8;
+        }
+        doc.setTextColor(59, 31, 14); doc.setFont('helvetica', 'normal');
+      }
+
+      doc.setTextColor(150, 120, 100); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      doc.text('Thank you for choosing Thread X', 20, y + 10);
+      doc.save('ThreadX_Invoice_' + cn.replace(/\s+/g, '_') + '.pdf');
+      toast('Invoice downloaded');
+    }
+    function waShare() {
+      const cn = document.getElementById('inv-cname').textContent;
+      if (cn === '—') { toast('Select items first'); return; }
+      const selectedItems = Array.from(document.querySelectorAll('.inv-item-check:checked')).map(cb => {
+        const parts = cb.value.split('-');
+        return { type: parts[0], id: parseInt(parts[1]) };
+      });
+      if (selectedItems.length === 0) { toast('No items selected'); return; }
+
+      const groups = {};
+      selectedItems.forEach(item => {
+        let name = '', price = 0;
+        if (item.type === 'order') {
+          const o = orders.find(x => x.id === item.id);
+          if (o) { name = o.garment; price = o.price; }
+        } else if (item.type === 'garment') {
+          const g = garments.find(x => x.id === item.id);
+          if (g) { name = g.name; price = g.price; }
+        }
+        if (name) {
+          if (!groups[name]) groups[name] = { qty: 0, total: 0 };
+          groups[name].qty++;
+          groups[name].total += price;
+        }
+      });
+
+      const itemsList = Object.entries(groups).map(([name, data]) => `• ${name} (x${data.qty}): ₦${data.total.toLocaleString()}`).join('\n');
+
+      const totalStr = document.getElementById('inv-total').textContent;
+      const paid = parseFloat(document.getElementById('inv-paid').value) || 0;
+      const balance = (parseFloat(totalStr.replace(/[^\d.]/g, '')) || 0) - paid;
+
+      let payInfo = '';
+      if (paid > 0) {
+        payInfo = `\nPaid: ₦${paid.toLocaleString()}\nOutstanding: ₦${balance.toLocaleString()}`;
+      }
+
+      const msg = encodeURIComponent(`🧵 *THREAD X — Invoice*\n\nDear ${cn},\n\n*Items:*\n${itemsList}\n\n*Total:* ${totalStr}${payInfo}\n\nThank you for choosing Thread X.\nBirnin Kebbi, Nigeria`);
+      window.open('https://wa.me/?text=' + msg, '_blank');
+    }
+    function renderInsights() {
+      const now = new Date();
+      const todayStr = now.toDateString();
+
+      // Calculate start of week (Sunday)
+      const sunday = new Date(now);
+      sunday.setDate(now.getDate() - now.getDay());
+      sunday.setHours(0, 0, 0, 0);
+
+      // Calculate start of month
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      let todayRev = 0, weekRev = 0, monthRev = 0, totalOut = 0;
+      const custStats = {};
+
+      orders.forEach(o => {
+        const balance = o.price - (o.paid || 0);
+        totalOut += balance;
+
+        if (!custStats[o.cid]) custStats[o.cid] = { name: o.customer, total: 0, count: 0, unpaid: 0 };
+        custStats[o.cid].total += (o.paid || 0);
+        custStats[o.cid].count++;
+        custStats[o.cid].unpaid += balance;
+
+        // Use paid_at if available, otherwise check local storage fallback
+        const paymentDate = o.paid_at || getLocalPaymentDate(o.id);
+
+        if (paymentDate) {
+          const pDate = new Date(paymentDate);
+          if (pDate.toDateString() === todayStr) todayRev += (o.paid || 0);
+          if (pDate >= sunday) weekRev += (o.paid || 0);
+          if (pDate >= monthStart) monthRev += (o.paid || 0);
+        } else if (o.payment === 'Paid' || o.payment === 'Part Payment') {
+          // If no date at all, still count towards month
+          monthRev += (o.paid || 0);
+        }
+      });
+
+      document.getElementById('ins-today').textContent = '₦' + Math.round(todayRev).toLocaleString();
+      document.getElementById('ins-week').textContent = '₦' + Math.round(weekRev).toLocaleString();
+      document.getElementById('ins-month').textContent = '₦' + Math.round(monthRev).toLocaleString();
+      document.getElementById('ins-out-total').textContent = '₦' + Math.round(totalOut).toLocaleString();
+
+      const debtors = Object.values(custStats).filter(c => c.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid);
+      document.getElementById('ins-out-count').textContent = `${debtors.length} clients`;
+
+      document.getElementById('ins-out-list').innerHTML = debtors.map(d => `
+    <div class="out-row">
+      <div>
+        <p style="font-weight:500;font-size:13px;margin-bottom:3px;">${d.name}</p>
+        <span class="badge ${d.unpaid >= (d.total + d.unpaid) * 0.9 ? 'badge-unpaid' : 'badge-part'}">
+          ${d.unpaid >= (d.total + d.unpaid) * 0.9 ? 'Unpaid' : 'Part Payment'}
+        </span>
+      </div>
+      <span style="font-family:'El Messiri',serif;font-size:19px;color:var(--danger);font-weight:600;">₦${d.unpaid.toLocaleString()}</span>
+    </div>`).join('') || '<p style="font-size:12px;color:var(--text-muted);text-align:center;">No outstanding balances!</p>';
+
+      document.getElementById('ins-top-cust').innerHTML = topCust.map((c, i) => `
+    <li>
+      <span class="rank-num">${i + 1}</span>
+      <div style="flex:1;">
+        <p style="font-weight:500;font-size:13px;margin-bottom:1px;">${c.name}</p>
+        <span style="font-size:11px;color:var(--text-muted);">${c.count} orders</span>
+      </div>
+      <span style="font-family:'El Messiri',serif;font-size:19px;font-weight:600;color:var(--text-main);">₦${c.total.toLocaleString()}</span>
+    </li>`).join('');
+
+      renderCharts();
+    }
+
+    // REVENUE EDITING
+    let currentEditOrders = [];
+    function openRevenueEditModal(period) {
+      const titles = { today: "Today's Payments", week: "This Week's Payments", month: "This Month's Payments" };
+      document.getElementById('rev-edit-title').textContent = titles[period];
+
+      const now = new Date();
+      let start;
+      if (period === 'today') {
+        start = new Date(now.setHours(0, 0, 0, 0));
+      } else if (period === 'week') {
+        start = new Date(now);
+        start.setDate(now.getDate() - now.getDay());
+        start.setHours(0, 0, 0, 0);
+      } else {
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+
+      currentEditOrders = orders.filter(o => o.paid_at && new Date(o.paid_at) >= start);
+
+      const list = document.getElementById('rev-edit-list');
+      if (currentEditOrders.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px;">No payments recorded in this period.</p>';
+      } else {
+        list.innerHTML = currentEditOrders.map(o => `
+          <div class="rev-edit-item">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-weight:600;font-size:14px;">${o.customer}</span>
+              <span style="font-size:11px;color:var(--text-dim);">${o.garment}</span>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:9px;">Paid Amount (₦)</label>
+              <input type="number" class="rev-edit-input" data-id="${o.id}" value="${o.paid}" 
+                style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-app);color:var(--text-main);">
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Total Price: ₦${o.price.toLocaleString()}</div>
+          </div>
+        `).join('');
+      }
+
+      openModal('revenue-edit-modal');
+    }
+
+    async function saveRevenueEdits() {
+      const inputs = document.querySelectorAll('.rev-edit-input');
+      const updates = [];
+
+      inputs.forEach(inp => {
+        const id = parseInt(inp.getAttribute('data-id'));
+        const newVal = parseFloat(inp.value) || 0;
+        const original = orders.find(o => o.id === id);
+
+        if (original && original.paid !== newVal) {
+          let newStatus = 'Unpaid';
+          if (newVal >= original.price) newStatus = 'Paid';
+          else if (newVal > 0) newStatus = 'Part Payment';
+
+          updates.push(db.from('orders').update({
+            paid: newVal,
+            payment: newStatus
+          }).eq('id', id));
+        }
+      });
+
+      if (updates.length > 0) {
+        const results = await Promise.all(updates);
+        if (results.some(r => r.error)) toast('Error saving some changes');
+        else toast('Insights updated successfully');
+      } else {
+        toast('No changes detected');
+      }
+
+      await refreshData();
+      renderInsights();
+      renderOrders();
+      renderDashStats();
+      closeModal('revenue-edit-modal');
+    }
+
+    // CHARTS
+    let garmentChart, monthChart;
+    function renderCharts() {
+      // Most Ordered Items
+      const garmentCounts = {};
+      orders.forEach(o => { garmentCounts[o.garment] = (garmentCounts[o.garment] || 0) + 1; });
+      const topItems = Object.entries(garmentCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const gLabels = topItems.map(x => x[0]);
+      const gData = topItems.map(x => x[1]);
+
+      if (garmentChart) garmentChart.destroy();
+      const ctxG = document.getElementById('garment-chart');
+      if (ctxG) {
+        garmentChart = new Chart(ctxG, {
+          type: 'bar',
+          data: {
+            labels: gLabels.length ? gLabels : ['No Data'],
+            datasets: [{
+              data: gData.length ? gData : [0],
+              backgroundColor: ['#322b14', '#70502C', '#46402B', '#EADCCD', '#C0A080'],
+              borderRadius: 6,
+              borderSkipped: false
+            }]
+          },
+          options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(234,220,205,0.5)' }, ticks: { color: '#98958D', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { color: '#322b14', font: { weight: '500', size: 11 } } } }, responsive: true, maintainAspectRatio: true }
+        });
+      }
+
+      // Orders by Month
+      const monthStats = new Array(12).fill(0);
+      orders.forEach(o => {
+        const d = new Date(o.created_at || o.due);
+        if (d.getFullYear() === new Date().getFullYear()) monthStats[d.getMonth()]++;
+      });
+
+      if (monthChart) monthChart.destroy();
+      const ctxM = document.getElementById('month-chart');
+      if (ctxM) {
+        monthChart = new Chart(ctxM, {
+          type: 'line',
+          data: {
+            labels: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
+            datasets: [{
+              data: monthStats,
+              borderColor: '#70502C',
+              backgroundColor: 'rgba(112,80,44,0.08)',
+              tension: 0.4,
+              fill: true,
+              pointBackgroundColor: '#70502C',
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: { plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(234,220,205,0.5)' }, ticks: { color: '#98958D', font: { size: 10 } } }, y: { grid: { color: 'rgba(234,220,205,0.5)' }, ticks: { color: '#98958D', font: { size: 10 }, stepSize: 1, precision: 0 } } }, responsive: true, maintainAspectRatio: true }
+        });
+      }
+    }
+
+    // SETTINGS
+    function renderPriceMgr() {
+      document.getElementById('price-manager').innerHTML = garments.map(g => `
+    <div class="price-row">
+      <div class="gname">${g.name}</div>
+      <span style="font-size:12px;color:var(--text-muted);">₦</span>
+      <input type="number" id="gp-${g.id}" value="${g.price}">
+      <button class="btn btn-secondary btn-sm" onclick="saveGarmentPrice(${g.id})">Save</button>
+      <button class="btn btn-danger btn-sm" onclick="delGarment(${g.id})">Delete</button>
+    </div>`).join('');
+    }
+    async function saveGarmentPrice(id) {
+      const newPrice = parseInt(document.getElementById('gp-' + id).value);
+      const { error } = await db.from('garments').update({ price: newPrice }).eq('id', id);
+      if (error) { toast('Error updating price'); return; }
+      await refreshData();
+      toast('Price updated successfully');
+    }
+    async function addGarment() {
+      const name = document.getElementById('ng-name').value.trim();
+      const price = parseInt(document.getElementById('ng-price').value);
+      if (!name || !price) { toast('Enter name and price'); return; }
+      const { error } = await db.from('garments').insert([{ name, price }]);
+      if (error) { toast('Error adding item'); return; }
+      await refreshData();
+      renderPriceMgr(); populateOrderForm();
+      toast(name + ' added');
+      document.getElementById('ng-name').value = ''; document.getElementById('ng-price').value = '';
+    }
+    async function delGarment(id) {
+      const { error } = await db.from('garments').delete().eq('id', id);
+      if (error) { toast('Error removing item'); return; }
+      await refreshData();
+      renderPriceMgr(); toast('Garment removed');
+    }
+    function renderStaffList() {
+      document.getElementById('staff-list').innerHTML = staffList.map(s => `
+    <div class="staff-card">
+      <div style="display:flex;align-items:center;gap:15px;">
+        <div class="s-avatar">${initials(s.name)}</div>
+        <div style="flex:1;">
+          <p style="font-weight:700;font-size:16px;color:var(--text-main);">${s.name}</p>
+          <p style="font-size:12px;color:var(--text-dim);">${s.email}</p>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="s-role-tag">${s.role}</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" title="Change Password" onclick="promptPass('staff', ${s.id})">🔑 Pass</button>
+          <button class="btn btn-danger btn-sm" title="Remove Staff" onclick="removeStaff(${s.id})">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+    }
+    async function promptPass(type, id) {
+      const newPass = prompt("Enter new password:");
+      if (newPass === null) return;
+      const { error } = await db.from('staff').update({ password: newPass }).eq('id', id);
+      if (error) { toast('Error updating password'); return; }
+      await refreshData();
+      toast('Password updated successfully');
+    }
+    async function addStaff() {
+      const name = document.getElementById('ns-name').value.trim();
+      const email = document.getElementById('ns-email').value.trim();
+      const role = document.getElementById('ns-role').value;
+      if (!name || !email) return;
+      const { error } = await db.from('staff').insert([{ name, email, role, password: '123' }]);
+      if (error) { toast('Error adding staff'); return; }
+      await refreshData();
+      renderStaffList(); renderTailors();
+      closeModal('add-staff-modal');
+      toast(name + ' added');
+      ['ns-name', 'ns-email'].forEach(id => document.getElementById(id).value = '');
+    }
+    async function removeStaff(id) {
+      const { error } = await db.from('staff').delete().eq('id', id);
+      if (error) { toast('Error removing staff'); return; }
+      await refreshData();
+      renderStaffList(); renderTailors();
+      toast('Staff removed');
+    }
+
+    // THEME
+    const sunSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+    const moonSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    function toggleTheme() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      applyTheme(dark ? 'light' : 'dark');
+    }
+    function applyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('txTheme', t);
+      document.getElementById('theme-icon').innerHTML = (t === 'dark' ? moonSVG : sunSVG);
+    }
+    applyTheme(localStorage.getItem('txTheme') || 'light');
+
+    // MOBILE SIDEBAR
+    function openSidebar() {
+      document.querySelector('.sidebar').classList.add('open');
+      document.getElementById('sidebar-overlay').classList.add('open');
+    }
+    function closeSidebar() {
+      document.querySelector('.sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('open');
+    }
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.addEventListener('click', function () { if (window.innerWidth <= 700) closeSidebar(); });
+    });
+
+    // SESSION RESTORE
+    const savedUser = localStorage.getItem('txUser');
+    if (savedUser) {
+      loginUser(JSON.parse(savedUser));
+    }
+
+  </script>
+</body>
+
+</html>
